@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Dark theme only configuration */
+html {
+  color-scheme: dark;
+  background-color: #111827;
+  color: white;
+}
+
+/* Ensure full height */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+  min-height: 100vh;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  10% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  90% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+}
+
+.animate-fadeInOut {
+  animation: fadeInOut 2s ease-in-out forwards;
+}
+
+button{
+  @apply cursor-pointer;
+}
+
+/* Smooth transitions for all clickable elements */
+button, a {
+  @apply transition-colors duration-200;
+}
+
+/* Prevent text selection on icons (like share/heart) */
+svg {
+  user-select: none;
+  pointer-events: none;
+}
