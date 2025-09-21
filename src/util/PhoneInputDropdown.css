@@ -1,0 +1,141 @@
+/* PhoneInputDropdown.css */
+
+.phone-input-container {
+    position: relative;
+    width: 100%;
+    max-width: 350px;
+    font-family: Arial, sans-serif;
+}
+
+.phone-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: #fff;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.phone-input-wrapper:focus-within {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+/* Flag Dropdown */
+.flag-dropdown {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-right: 1px solid #ddd;
+    margin-right: 8px;
+    user-select: none;
+}
+
+.flag-dropdown .flag {
+    font-size: 20px;
+    margin-right: 6px;
+}
+
+.flag-dropdown .dial {
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 4px;
+    color: #333;
+}
+
+.flag-dropdown .arrow {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Phone input */
+.phone-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    padding: 6px;
+}
+
+.phone-input.is-invalid {
+    border: none;
+}
+
+.phone-input::placeholder {
+    color: #aaa;
+}
+
+/* Dropdown list */
+.country-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 4px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    z-index: 999;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Styled scrollbar */
+.country-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.country-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.country-list::-webkit-scrollbar-thumb {
+    background-color: #bbb;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.country-list::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+/* Country item */
+.country-item {
+    /* display: flex; */
+
+    align-items: center;
+    list-style-type: none;
+    padding: 3px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.country-item:hover {
+    background: #f5f5f5;
+}
+
+.country-item .flag {
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.country-item .name {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+}
+
+.country-item .dial {
+    font-size: 13px;
+    color: #555;
+}
+
+/* Error message */
+.text-danger {
+    font-size: 13px;
+    margin-top: 4px;
+    color: #dc3545;
+}
