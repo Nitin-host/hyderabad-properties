@@ -27,7 +27,6 @@ const StickyContactForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
     try{
         api.post('/contact', formData);
         alert("Thank you! We will contact you soon.");
@@ -68,7 +67,7 @@ const StickyContactForm = () => {
               value={formData.name}
               onChange={handleChange}
               placeholder="Name"
-              className="border border-gray-600 rounded px-2 py-1 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-600 rounded px-2 py-2 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             <input
@@ -77,7 +76,7 @@ const StickyContactForm = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder="Email"
-              className="border border-gray-600 rounded px-2 py-1 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-600 rounded px-2 py-2 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             <PhoneInputDropdown
@@ -91,7 +90,7 @@ const StickyContactForm = () => {
               value={formData.propertyType}
               onChange={handleChange}
               required
-              className="border border-gray-600 rounded px-2 py-1 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-600 rounded px-2 py-2 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled>
                 Select Property Type
@@ -104,7 +103,7 @@ const StickyContactForm = () => {
             </select>
             <button
               type="submit"
-              className="bg-blue-500 text-white rounded px-2 py-1 hover:bg-blue-600 transition mt-2"
+              className="bg-blue-500 text-white rounded px-2 py-2 hover:bg-blue-600 transition mt-2"
             >
               Submit
             </button>

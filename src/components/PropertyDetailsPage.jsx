@@ -131,9 +131,19 @@ const PropertyDetailsPage = () => {
     );
   }
 
+  const additionalDetailsConfig = [
+    { name: "flooring", label: "Flooring" },
+    { name: "overlooking", label: "Overlooking" },
+    { name: "waterAvailability", label: "Water Availability" },
+    { name: "statusOfElectricity", label: "Electricity" },
+    { name: "ageOfConstruction", label: "Age of Construction" },
+    { name: "additionalRooms", label: "Additional Rooms" },
+    { name: "lift", label: "Lifts" },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-900">
-      <StickyContactForm/>
+      <StickyContactForm />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Property Title and Price */}
         <div className="mb-8">
@@ -185,15 +195,15 @@ const PropertyDetailsPage = () => {
                       >
                         <ChevronRightIcon className="h-6 w-6" />
                       </button>
-                      
+
                       {/* Auto-slide control */}
                       <button
                         onClick={toggleAutoSlide}
                         className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm hover:bg-opacity-75"
                       >
-                        {autoSlide ? 'Pause Slideshow' : 'Play Slideshow'}
+                        {autoSlide ? "Pause Slideshow" : "Play Slideshow"}
                       </button>
-                      
+
                       {/* Favorite button */}
                       <button
                         onClick={handleFavoriteToggle}
@@ -201,7 +211,11 @@ const PropertyDetailsPage = () => {
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className={`h-6 w-6 ${isFavorite(property._id) ? 'text-red-500 fill-red-500' : 'text-gray-600'}`}
+                          className={`h-6 w-6 ${
+                            isFavorite(property._id)
+                              ? "text-red-500 fill-red-500"
+                              : "text-gray-600"
+                          }`}
                           viewBox="0 0 24 24"
                           stroke="currentColor"
                           strokeWidth={2}
@@ -284,7 +298,7 @@ const PropertyDetailsPage = () => {
           <div className="lg:col-span-1">
             <div className="bg-gray-800 rounded-lg shadow-lg p-4 lg:fixed lg:top-24 lg:right-4 lg:w-80 lg:z-30">
               {/* Tabs */}
-             <div className="flex mb-6 bg-gray-900/60 rounded-xl p-1 backdrop-blur-sm border border-gray-700">
+              <div className="flex mb-6 bg-gray-900/60 rounded-xl p-1 backdrop-blur-sm border border-gray-700">
                 {["overview", "details", "amenities", "location"].map((tab) => (
                   <button
                     key={tab}
@@ -301,8 +315,7 @@ const PropertyDetailsPage = () => {
                 ))}
               </div>
 
-              
-              <div className='min-h-60'>
+              <div className="min-h-60">
                 {/* Tab Content */}
                 {activeTab === "overview" && (
                   <div className="space-y-3">
@@ -325,7 +338,9 @@ const PropertyDetailsPage = () => {
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Bedrooms</p>
-                        <p className="font-medium text-sm">{property.bedrooms}</p>
+                        <p className="font-medium text-sm">
+                          {property.bedrooms}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Bathrooms</p>
@@ -334,9 +349,21 @@ const PropertyDetailsPage = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Furnished</p>
+                        <p className="text-xs text-gray-400">Furnished Status</p>
                         <p className="font-medium text-sm">
                           {property.furnished}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Maintenance</p>
+                        <p className="font-medium text-sm">
+                          ₹{property.maintenance}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Broker Charge</p>
+                        <p className="font-medium text-sm">
+                          {property.brokerCharge}
                         </p>
                       </div>
                     </div>
@@ -352,7 +379,9 @@ const PropertyDetailsPage = () => {
                       </h3>
                       <div className="space-y-1.5">
                         <div className="flex justify-between">
-                          <span className="text-gray-300 text-xs">Parking:</span>
+                          <span className="text-gray-300 text-xs">
+                            Parking:
+                          </span>
                           <span className="font-medium text-xs">
                             {property.parking}
                           </span>
@@ -362,7 +391,9 @@ const PropertyDetailsPage = () => {
                             Security Deposit:
                           </span>
                           <span className="font-medium text-xs">
-                            ₹{property.securityDeposit?.toLocaleString() || "N/A"}
+                            ₹
+                            {property.securityDeposit?.toLocaleString() ||
+                              "N/A"}
                           </span>
                         </div>
                       </div>
@@ -374,58 +405,27 @@ const PropertyDetailsPage = () => {
                         Additional Details
                       </h3>
                       <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Flooring:</span>
-                          <span className="font-medium">
-                            {property.flooring || "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Overlooking:</span>
-                          <span className="font-medium">
-                            {property.overlooking || "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">
-                            Water Availability:
-                          </span>
-                          <span className="font-medium">
-                            {property.waterAvailability || "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Electricity:</span>
-                          <span className="font-medium">
-                            {property.statusOfElectricity || "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">
-                            Age of Construction:
-                          </span>
-                          <span className="font-medium">
-                            {property.ageOfConstruction || "N/A"}
-                          </span>
-                        </div>
-                        {property.additionalRooms && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">
-                              Additional Rooms:
-                            </span>
-                            <span className="font-medium text-xs">
-                              {property.additionalRooms}
-                            </span>
-                          </div>
-                        )}
-                        {property.lift && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">Lifts:</span>
-                            <span className="font-medium text-xs">
-                              {property.lift}
-                            </span>
-                          </div>
-                        )}
+                        {additionalDetailsConfig.map((field) => {
+                          const value = property[field.name];
+                          const hasValue =
+                            value !== undefined &&
+                            value !== null &&
+                            value !== "";
+
+                          return (
+                            <div
+                              key={field.name}
+                              className="flex justify-between"
+                            >
+                              <span className="text-gray-300 text-xs">
+                                {field.label}:
+                              </span>
+                              <span className="font-medium text-xs">
+                                {hasValue ? value : "Not Available"}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -451,7 +451,9 @@ const PropertyDetailsPage = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-400 text-xs">No amenities listed</p>
+                      <p className="text-gray-400 text-xs">
+                        No amenities listed
+                      </p>
                     )}
                   </div>
                 )}
@@ -464,7 +466,9 @@ const PropertyDetailsPage = () => {
                     <div className="space-y-2 mb-2">
                       <div>
                         <p className="text-xs text-gray-400">Address</p>
-                        <p className="font-medium text-xs">{property.location}</p>
+                        <p className="font-medium text-xs">
+                          {property.location}
+                        </p>
                       </div>
                       {property?.landmark && (
                         <div>
@@ -490,13 +494,17 @@ const PropertyDetailsPage = () => {
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">Email:</span>
+                            <span className="text-gray-300 text-xs">
+                              Email:
+                            </span>
                             <span className="font-medium text-xs">
                               {property.agent.email}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">Phone:</span>
+                            <span className="text-gray-300 text-xs">
+                              Phone:
+                            </span>
                             <span className="font-medium text-xs">
                               {property.agent.phone}
                             </span>

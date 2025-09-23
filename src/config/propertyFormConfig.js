@@ -1,3 +1,5 @@
+import { Label } from "recharts";
+
 // Property Management Form Configuration
 export const propertyFormConfig = {
   // Basic form structure
@@ -13,7 +15,6 @@ export const propertyFormConfig = {
           required: true,
           placeholder: "Enter property title",
           validation: { minLength: 3, maxLength: 100 },
-          
         },
         {
           name: "propertyType",
@@ -33,40 +34,19 @@ export const propertyFormConfig = {
           ],
         },
         {
-          name: "listedBy",
-          type: "select",
-          label: "Listed By",
-          options: [
-            { value: "owner", label: "Owner" },
-            { value: "agent", label: "Agent" },
-          ],
-          placeholder: "Select who is listing the property",
-          colSpan: 1,
-        },
-        {
-          name: "description",
-          type: "textarea",
-          label: "Description",
-          required: true,
-          placeholder: "Enter property description",
-          rows: 4,
-          colSpan: 2,
-          validation: { minLength: 10, maxLength: 1000 },
-        },
-        {
           name: "price",
           type: "number",
-          label: "Price",
+          label: "Monthly Rent (₹)",
           required: true,
           placeholder: "Enter price",
           validation: { min: 0 },
         },
         {
-          name: "brokerCharge",
+          name: "maintenance",
           type: "number",
-          label: "Broker Charge (%)",
-          placeholder: "Enter broker charge percentage",
-          validation: { min: 0, max: 100 },
+          label: "Maintenance (₹/month)",
+          placeholder: "Monthly maintenance cost",
+          validation: { min: 0 },
         },
         {
           name: "location",
@@ -94,19 +74,32 @@ export const propertyFormConfig = {
           name: "bedrooms",
           type: "select",
           label: "Bedrooms",
+          required: true,
           options: [
-            {value:'1BHK', label:'1BHK'},
-            {value:'2BHK', label:'2BHK'},
-            {value:'3BHK', label:'3BHK'},
-            {value:'4BHK', label:'4BHK'},
+            { value: "1BHK", label: "1BHK" },
+            { value: "2BHK", label: "2BHK" },
+            { value: "3BHK", label: "3BHK" },
+            { value: "4BHK", label: "4BHK" },
           ],
         },
         {
           name: "bathrooms",
           type: "number",
           label: "Bathrooms",
+          required: true,
           placeholder: "Number of bathrooms",
           validation: { min: 0, max: 20 },
+        },
+        {
+          name: "balconies",
+          type: "select",
+          label: "Balconies",
+          options: [
+            { value: "0", label: "0" },
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+            { value: "3", label: "3" },
+          ],
         },
         {
           name: "size",
@@ -134,13 +127,6 @@ export const propertyFormConfig = {
           ],
         },
         {
-          name: "maintenance",
-          type: "number",
-          label: "Maintenance (₹/month)",
-          placeholder: "Monthly maintenance cost",
-          validation: { min: 0 },
-        },
-        {
           name: "parking",
           type: "select",
           label: "Parking Available",
@@ -149,20 +135,6 @@ export const propertyFormConfig = {
             { value: "car", label: "Car" },
             { value: "car & bike", label: "Car & Bike" },
             { value: "none", label: "None" },
-          ],
-        },
-        {
-          name: "status",
-          type: "select",
-          label: "Property Status",
-          options: [
-            { value: "For Sale", label: "For Sale" },
-            { value: "For Rent", label: "For Rent" },
-            { value: "Sold", label: "Sold" },
-            { value: "Rented", label: "Rented" },
-            { value: "Under Contract", label: "Under Contract" },
-            { value: "Available", label: "Available" },
-            { value: "Occupied", label: "Occupied" },
           ],
         },
         {
@@ -262,12 +234,60 @@ export const propertyFormConfig = {
           validation: { min: 0 },
         },
         {
-          name: "featured",
+          name: "status",
           type: "select",
-          label: "Featured Property",
+          label: "Property Status",
+          required: true,
           options: [
-            { value: true, label: "Yes" },
-            { value: false, label: "No" },
+            { value: "For Sale", label: "For Sale" },
+            { value: "For Rent", label: "For Rent" },
+            { value: "Sold", label: "Sold" },
+            { value: "Rented", label: "Rented" },
+            { value: "Under Contract", label: "Under Contract" },
+            { value: "Available", label: "Available" },
+            { value: "Occupied", label: "Occupied" },
+          ],
+        },
+        {
+          name: "availability",
+          type: "radio-date",
+          label: "Property Availability",
+          options: [
+            { value: "immediate", label: "Immediate" },
+            { value: "date", label: "Select Date" },
+          ],
+        },
+        {
+          name: "description",
+          type: "textarea",
+          label: "Description",
+          required: true,
+          placeholder: "Enter property description",
+          rows: 4,
+          colSpan: 2,
+          validation: { minLength: 10, maxLength: 1000 },
+        },
+        {
+          name: "listedBy",
+          type: "select",
+          label: "Listed By",
+          required: true,
+          options: [
+            { value: "owner", label: "Owner" },
+            { value: "agent", label: "Agent" },
+          ],
+          placeholder: "Select who is listing the property",
+          colSpan: 1,
+        },
+        {
+          name: "brokerCharge",
+          type: "select",
+          label: "Broker Charge",
+          options: [
+            { value: "20 Days", label: "20 Days Rent" },
+            { value: "1 month", label: "One Month Rent" },
+            { value: "no charge", label: "No Charge" },
+            { value: "Contact for details", label: "Contact for Details" },
           ],
         },
       ],
@@ -324,12 +344,16 @@ export const propertyFormConfig = {
     size: "",
     bedrooms: "",
     bathrooms: "",
+    balconies: "",
+    brokerCharge: "",
     totalFloors: "",
     furnished: "",
     listedBy: "",
     maintenance: "",
     parking: "",
     status: "Available",
+    availability: "immediate", // default option
+    availabilityDate: "", // only used if user selects date
     // Additional fields
     securityDeposit: "",
     landmarks: "",
@@ -340,7 +364,6 @@ export const propertyFormConfig = {
     waterAvailability: "",
     statusOfElectricity: "",
     lift: "",
-    featured: false,
     // Amenities (all default to false)
     clubhouseGym: false,
     school: false,
@@ -388,6 +411,10 @@ export const propertyFormConfig = {
       "propertyType",
       "size",
       "bedrooms",
+      "maintenance",
+      "bathrooms",
+      "status",
+      "listedBy",
     ],
     numeric: [
       "price",
@@ -421,6 +448,9 @@ export const propertyFormConfig = {
     max: {
       bathrooms: 20,
       totalFloors: 50,
+    },
+    conditionalRequired: {
+      availabilityDate: (formData) => formData.availability === "date",
     },
   },
 
@@ -470,8 +500,8 @@ export const formHelpers = {
 
     // Helper function to get nested field value
     const getFieldValue = (fieldName) => {
-      if (fieldName.includes('.')) {
-        const parts = fieldName.split('.');
+      if (fieldName.includes(".")) {
+        const parts = fieldName.split(".");
         let value = formData;
         for (const part of parts) {
           value = value?.[part];
@@ -481,21 +511,48 @@ export const formHelpers = {
       return formData[fieldName];
     };
 
+    // Check conditional required
+    if (validationRules.conditionalRequired) {
+      Object.entries(validationRules.conditionalRequired).forEach(
+        ([field, condition]) => {
+          if (condition(formData)) {
+            const value = formData[field];
+            if (!value || value.toString().trim() === "") {
+              const displayName = field.includes(".")
+                ? field.split(".").pop()
+                : field;
+              errors[field] = `${
+                displayName.charAt(0).toUpperCase() + displayName.slice(1)
+              } is required`;
+            }
+          }
+        }
+      );
+    }
+
     // Check required fields
-    validationRules.required.forEach(field => {
+    validationRules.required.forEach((field) => {
       const value = getFieldValue(field);
-      if (!value || value.toString().trim() === '') {
-        const displayName = field.includes('.') ? field.split('.').pop() : field;
-        errors[field] = `${displayName.charAt(0).toUpperCase() + displayName.slice(1)} is required`;
+      if (!value || value.toString().trim() === "") {
+        const displayName = field.includes(".")
+          ? field.split(".").pop()
+          : field;
+        errors[field] = `${
+          displayName.charAt(0).toUpperCase() + displayName.slice(1)
+        } is required`;
       }
     });
 
     // Check numeric fields
-    validationRules.numeric.forEach(field => {
+    validationRules.numeric.forEach((field) => {
       const value = getFieldValue(field);
       if (value && isNaN(Number(value))) {
-        const displayName = field.includes('.') ? field.split('.').pop() : field;
-        errors[field] = `${displayName.charAt(0).toUpperCase() + displayName.slice(1)} must be a number`;
+        const displayName = field.includes(".")
+          ? field.split(".").pop()
+          : field;
+        errors[field] = `${
+          displayName.charAt(0).toUpperCase() + displayName.slice(1)
+        } must be a number`;
       }
     });
 
@@ -503,8 +560,12 @@ export const formHelpers = {
     Object.entries(validationRules.minLength).forEach(([field, minLen]) => {
       const value = getFieldValue(field);
       if (value && value.length < minLen) {
-        const displayName = field.includes('.') ? field.split('.').pop() : field;
-        errors[field] = `${displayName.charAt(0).toUpperCase() + displayName.slice(1)} must be at least ${minLen} characters`;
+        const displayName = field.includes(".")
+          ? field.split(".").pop()
+          : field;
+        errors[field] = `${
+          displayName.charAt(0).toUpperCase() + displayName.slice(1)
+        } must be at least ${minLen} characters`;
       }
     });
 
@@ -512,8 +573,12 @@ export const formHelpers = {
     Object.entries(validationRules.maxLength).forEach(([field, maxLen]) => {
       const value = getFieldValue(field);
       if (value && value.length > maxLen) {
-        const displayName = field.includes('.') ? field.split('.').pop() : field;
-        errors[field] = `${displayName.charAt(0).toUpperCase() + displayName.slice(1)} must be no more than ${maxLen} characters`;
+        const displayName = field.includes(".")
+          ? field.split(".").pop()
+          : field;
+        errors[field] = `${
+          displayName.charAt(0).toUpperCase() + displayName.slice(1)
+        } must be no more than ${maxLen} characters`;
       }
     });
 
@@ -521,8 +586,12 @@ export const formHelpers = {
     Object.entries(validationRules.min).forEach(([field, minVal]) => {
       const value = getFieldValue(field);
       if (value && Number(value) < minVal) {
-        const displayName = field.includes('.') ? field.split('.').pop() : field;
-        errors[field] = `${displayName.charAt(0).toUpperCase() + displayName.slice(1)} must be at least ${minVal}`;
+        const displayName = field.includes(".")
+          ? field.split(".").pop()
+          : field;
+        errors[field] = `${
+          displayName.charAt(0).toUpperCase() + displayName.slice(1)
+        } must be at least ${minVal}`;
       }
     });
 
@@ -530,8 +599,12 @@ export const formHelpers = {
     Object.entries(validationRules.max).forEach(([field, maxVal]) => {
       const value = getFieldValue(field);
       if (value && Number(value) > maxVal) {
-        const displayName = field.includes('.') ? field.split('.').pop() : field;
-        errors[field] = `${displayName.charAt(0).toUpperCase() + displayName.slice(1)} must be no more than ${maxVal}`;
+        const displayName = field.includes(".")
+          ? field.split(".").pop()
+          : field;
+        errors[field] = `${
+          displayName.charAt(0).toUpperCase() + displayName.slice(1)
+        } must be no more than ${maxVal}`;
       }
     });
 

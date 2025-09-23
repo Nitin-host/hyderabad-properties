@@ -15,7 +15,6 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
     phone: '',
     role: 'admin' // Default role for new users
   });
@@ -68,13 +67,6 @@ const UserManagement = () => {
       errors.email = 'Email is invalid';
     }
     
-    // Only validate password for new users
-    if (!selectedUser && !formData.password) {
-      errors.password = 'Password is required';
-    } else if (!selectedUser && formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-    
     if (!formData.phone.trim()) {
       errors.phone = 'Phone number is required';
     } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
@@ -124,7 +116,6 @@ const UserManagement = () => {
     try {
       // Remove password if empty (not updating password)
       const updateData = { ...formData };
-      if (!updateData.password) delete updateData.password;
       
       const response = await usersAPI.update(selectedUser._id, updateData);
       
@@ -171,7 +162,6 @@ const UserManagement = () => {
     setFormData({
       name: user.name || '',
       email: user.email || '',
-      password: '', // Don't populate password
       phone: user.phone || '',
       role: user.role || 'admin'
     });
@@ -360,7 +350,7 @@ const UserManagement = () => {
                     {formErrors.email}
                   </p>
                 )}
-              </div>  
+              </div>
               <div className="mb-4">
                 <label
                   className="block text-white text-sm font-bold mb-2"
@@ -409,7 +399,7 @@ const UserManagement = () => {
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Edit Admin User</h3>
               <button
@@ -472,31 +462,6 @@ const UserManagement = () => {
                   </p>
                 )}
               </div>
-
-              <div className="mb-4">
-                <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                  htmlFor="edit-password"
-                >
-                  Password (Leave blank to keep current)
-                </label>
-                <input
-                  type="password"
-                  id="edit-password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    formErrors.password ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {formErrors.password && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {formErrors.password}
-                  </p>
-                )}
-              </div>
-
               <div className="mb-4">
                 <label
                   className="block text-gray-700 text-sm font-bold mb-2"

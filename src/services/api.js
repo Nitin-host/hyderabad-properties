@@ -86,7 +86,9 @@ export const authAPI = {
   logout: () => api.post("/auth/logout"),
   refreshToken: () => api.post("/auth/refresh"),
   getProfile: () => api.get("/auth/profile"),
-  updateProfile: (data) => api.put("/auth/profile", data),
+  updateProfile: (data) => {
+   return api.put("/auth/profile", data, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   getFavorites: () => api.get("/auth/favorites"),
   addToFavorites: (propertyId) => api.post(`/auth/favorites/${propertyId}`),
   removeFromFavorites: (propertyId) => api.delete(`/auth/favorites/${propertyId}`),

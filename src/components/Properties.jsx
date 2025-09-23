@@ -293,25 +293,25 @@ const Properties = () => {
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+        <div className="mb-6 px-4 sm:px-6 lg:px-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center">
             {/* Column 1: Header and count */}
-            <div className="col-span-2">
-              <h1 className="text-3xl font-bold text-white">
+            <div className="col-span-1 lg:col-span-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
                 Properties in Kondapur-HYD{" "}
                 <span className="text-lg font-normal text-gray-400">
                   ({filteredProperties.length})
                 </span>
               </h1>
-              <p className="text-gray-400 mt-1">
+              <p className="text-gray-400 mt-1 text-sm sm:text-base">
                 Discover your dream property from our extensive collection
               </p>
             </div>
 
             {/* Column 2: Search, Filter, View Toggle */}
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              {/* Search and Filter Row - Full Width on Mobile */}
-              <div className="flex w-full sm:w-auto items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mt-4 lg:mt-0">
+              {/* Search Bar + Filter */}
+              <div className="flex flex-1 items-center gap-2">
                 {/* Search Bar */}
                 <div className="relative flex-grow">
                   <Search
@@ -326,7 +326,7 @@ const Properties = () => {
                     className="w-full pl-10 pr-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-white"
                   />
                 </div>
-                
+
                 {/* Filter Button */}
                 <FilterPopover
                   filters={filters}
@@ -348,7 +348,11 @@ const Properties = () => {
                       : "Switch to grid view"
                   }
                 >
-                  {viewMode === "grid" ? <List size={20} /> : <Grid size={20} />}
+                  {viewMode === "grid" ? (
+                    <List size={20} />
+                  ) : (
+                    <Grid size={20} />
+                  )}
                 </button>
               </div>
             </div>

@@ -9,14 +9,13 @@ import {
 } from "lucide-react";
 import { useWishlist } from '../context/WishlistContext';
 
-const PropertyCard = ({ property}) => {
+const PropertyCard = ({ property, onToggleFavorite }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useWishlist();
 
   const capitalizeFirst = (text) =>
     text.charAt(0).toUpperCase() + text.slice(1);
-
 
   const formatPrice = (price) => {
     if (price >= 10000000) {
@@ -29,7 +28,7 @@ const PropertyCard = ({ property}) => {
 
   const nextImage = () => {
     if (property.images && property.images.length > 0) {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === property.images.length - 1 ? 0 : prev + 1
       );
     }
@@ -37,15 +36,18 @@ const PropertyCard = ({ property}) => {
 
   const prevImage = () => {
     if (property.images && property.images.length > 0) {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === 0 ? property.images.length - 1 : prev - 1
       );
     }
   };
 
-  const currentImage = property.images && property.images.length > 0 
-    ? property.images[currentImageIndex]?.cloudinaryUrl?.replace(/`/g, '').trim()
-    : '';
+  const currentImage =
+    property.images && property.images.length > 0
+      ? property.images[currentImageIndex]?.cloudinaryUrl
+          ?.replace(/`/g, "")
+          .trim()
+      : "";
 
   return (
     <div className="mt-5 bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
@@ -115,13 +117,16 @@ const PropertyCard = ({ property}) => {
           onClick={(e) => {
             e.stopPropagation();
             toggleFavorite(property._id);
+            if (onToggleFavorite) onToggleFavorite(); // 👈 call parent refresh
           }}
           className="absolute bottom-2 right-2 p-2 bg-white bg-opacity-80 rounded-full hover:bg-opacity-100 transition-all"
         >
           <Heart
             size={16}
             className={`${
-              isFavorite(property._id) ? "fill-red-500 text-red-500" : "text-gray-600"
+              isFavorite(property._id)
+                ? "fill-red-500 text-red-500"
+                : "text-gray-600"
             }`}
           />
         </button>

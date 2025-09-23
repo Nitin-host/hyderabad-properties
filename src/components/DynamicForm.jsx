@@ -1,5 +1,6 @@
 import React from 'react';
 import { propertyFormConfig } from '../config/propertyFormConfig';
+import CustomDatePicker from '../util/CustomDatePicker';
 
 const DynamicForm = ({ formData, onChange, errors = {} }) => {
   const { sections, styles } = propertyFormConfig;
@@ -25,6 +26,11 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
       newFormData.amenities = amenities;
       
       onChange(newFormData);
+    } else if (type === "radio-date") {
+      onChange({
+        ...formData,
+        [name]: value
+      });
     } else {
       // Handle nested field names (e.g., address.street)
       if (name.includes('.')) {
@@ -38,10 +44,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
         };
         onChange(newFormData);
       } else {
-        // Handle regular input changes
         let processedValue = value;
-        
-        // Handle boolean values for select fields
         if (value === 'true') processedValue = true;
         if (value === 'false') processedValue = false;
         
@@ -71,7 +74,6 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
     // Get field value, handling nested fields
     const getFieldValue = (fieldName) => {
       if (fieldName.includes('.')) {
-        console.log('Accessing nested field:', parent, child, formData[parent]);
         const [parent, child] = fieldName.split('.');
         return formData[parent]?.[child] || '';
       }
@@ -79,12 +81,13 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
     };
 
     switch (type) {
-      case 'text':
-      case 'number':
+      case "text":
+      case "number":
         return (
           <div key={name} className={fieldClasses}>
             <label className={styles.label}>
-              {label}{isRequired}
+              {label}
+              {isRequired}
             </label>
             <input
               type={type}
@@ -94,19 +97,16 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
               className={styles.input}
               placeholder={placeholder}
             />
-            {errors[name] && (
-              <p className={styles.error}>
-                {errors[name]}
-              </p>
-            )}
+            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
           </div>
         );
 
-      case 'textarea':
+      case "textarea":
         return (
           <div key={name} className={fieldClasses}>
             <label className={styles.label}>
-              {label}{isRequired}
+              {label}
+              {isRequired}
             </label>
             <textarea
               name={name}
@@ -116,19 +116,16 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
               className={styles.textarea}
               placeholder={placeholder}
             />
-            {errors[name] && (
-              <p className={styles.error}>
-                {errors[name]}
-              </p>
-            )}
+            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
           </div>
         );
 
-      case 'select':
+      case "select":
         return (
           <div key={name} className={fieldClasses}>
             <label className={styles.label}>
-              {label}{isRequired}
+              {label}
+              {isRequired}
             </label>
             <select
               name={name}
@@ -143,15 +140,11 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
                 </option>
               ))}
             </select>
-            {errors[name] && (
-              <p className={styles.error}>
-                {errors[name]}
-              </p>
-            )}
+            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
           </div>
         );
 
-      case 'checkbox':
+      case "checkbox":
         return (
           <div key={name} className={styles.checkboxContainer}>
             <input
@@ -165,6 +158,52 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
             <label htmlFor={name} className={styles.checkboxLabel}>
               {label}
             </label>
+          </div>
+        );
+      case "radio-date":
+        return (
+          <div key={name} className={fieldClasses}>
+            <label className={styles.label}>
+              {label}
+              {isRequired}
+            </label>
+            <div className="flex gap-4 items-center">
+              {options.map((option) => (
+                <label key={option.value} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name={name}
+                    value={option.value}
+                    checked={formData[name] === option.value}
+                    onChange={handleInputChange}
+                    className="text-blue-500"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+
+            {/* Show calendar only if "date" is chosen */}
+            {formData[name] === "date" && (
+              <div className="mt-2">
+                <CustomDatePicker
+                  value={formData.availabilityDate || ""}
+                  onChange={(date) =>
+                    onChange({ ...formData, availabilityDate: date })
+                  }
+                  minDate={new Date()} // today onwards
+                />
+                {/* <input
+                  type="date"
+                  name="availabilityDate"
+                  value={formatDateForInput(formData.availabilityDate || "")}
+                  onChange={handleInputChange}
+                  className={styles.input}
+                  min={new Date().toISOString().split("T")[0]} // today onwards
+                /> */}
+              </div>
+            )}
+            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
           </div>
         );
 

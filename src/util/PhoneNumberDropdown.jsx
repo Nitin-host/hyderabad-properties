@@ -199,10 +199,10 @@ class PhoneInputDropdown extends Component {
     return (
       <div className={`relative w-full ${className}`}>
         {/* Input + Dropdown unified */}
-        <div className="flex items-center border border-gray-700 rounded-lg shadow-sm bg-gray-900 text-gray-100 focus-within:ring-2 focus-within:ring-indigo-500">
+        <div className="flex items-center border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-gray-100 focus-within:ring-2 focus-within:ring-indigo-500">
           {/* Dropdown Button */}
           <div
-            className="flex items-center gap-2 px-3 py-3 cursor-pointer hover:bg-gray-800 rounded-l-lg"
+            className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded-l-lg"
             onClick={this.toggleDropdown}
             role="button"
           >
@@ -212,13 +212,13 @@ class PhoneInputDropdown extends Component {
               className="w-5 h-4 rounded-sm"
             />
             <span className="text-sm">{selectedCountry.dial}</span>
-            <span className="ml-1">▾</span>
+            <span className="ml-0">▾</span>
           </div>
 
           {/* Input (same styles, seamless merge) */}
           <input
             type="tel"
-            className="w-full px-3 py-3 bg-gray-900 text-white focus:outline-none rounded-r-lg"
+            className="w-full px-3 py-2 bg-gray-700 text-white focus:outline-none rounded-r-lg"
             placeholder="Enter phone number"
             value={formatLocalNumber(phone, selectedCountry.code)}
             onChange={this.handlePhoneChange}
