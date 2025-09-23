@@ -8,6 +8,8 @@ import PropertyDetailsPage from "./components/PropertyDetailsPage";
 import AdminDashboard from "./components/AdminDashboard";
 import { AuthProvider } from "./context/AuthContext";
 import { WishlistProvider } from "./context/WishlistContext";
+import Wishlist from "./components/Wishlist";
+import Profile from "./components/Profile";
 
 function App() {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true);
@@ -46,6 +48,9 @@ function App() {
               <Route path="/" element={<Properties />} />
               <Route path="/property/:id" element={<PropertyDetailsPage />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/favorites" element={<Wishlist />} />
+              <Route path='/profile' element={<Profile/>} />
+              <Route path="*" element={<div className="p-6">404 Not Found</div>} />
             </Routes>
           </main>
         </div>

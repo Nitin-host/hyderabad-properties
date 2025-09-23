@@ -63,46 +63,34 @@ const PropertyManagement = ({ properties: propProperties, onAddProperty, onEditP
   
   const handleAddProperty = async (propertyData) => {
     try {
-      const response = await propertiesAPI.createProperty(propertyData);
-      if (response.success) {
-        // If props callback exists, use it
-        if (onAddProperty) {
-          onAddProperty(response.data);
-        } else {
-          // Otherwise update local state
-          setProperties(prev => [...prev, response.data]);
-        }
-        return { success: true, data: response.data };
+      const res = await propertiesAPI.createProperty(propertyData);
+      if (res.success) {
+        await handleMediaUpload(res.data._id); // upload media if needed
+        await fetchProperties(); // <-- fetch updated list
+        return { success: true, data: res.data };
       }
-      return { success: false, error: response.message || 'Failed to add property' };
+      return { success: false, error: res.message };
     } catch (err) {
-      console.error('Error adding property:', err);
-      return { success: false, error: err.message || 'An error occurred while adding property' };
+      console.error(err);
+      return { success: false, error: err.message };
     }
   };
-  
+
   const handleUpdateProperty = async (id, propertyData) => {
     try {
-      const response = await propertiesAPI.updateProperty(id, propertyData);
-      if (response.success) {
-        // If props callback exists, use it
-        if (onEditProperty) {
-          onEditProperty(response.data);
-        } else {
-          // Otherwise update local state
-          setProperties(prev => 
-            prev.map(p => p._id === id ? response.data : p)
-          );
-        }
-        return { success: true, data: response.data };
+      const res = await propertiesAPI.updateProperty(id, propertyData);
+      if (res.success) {
+        await handleMediaUpload(id); // upload media if needed
+        await fetchProperties(); // <-- fetch updated list
+        return { success: true, data: res.data };
       }
-      return { success: false, error: response.message || 'Failed to update property' };
+      return { success: false, error: res.message };
     } catch (err) {
-      console.error('Error updating property:', err);
-      return { success: false, error: err.message || 'An error occurred while updating property' };
+      console.error(err);
+      return { success: false, error: err.message };
     }
   };
-  
+
   const handleDeleteProperty = async (id) => {
     try {
       const response = await propertiesAPI.deleteProperty(id);
@@ -122,11 +110,7 @@ const PropertyManagement = ({ properties: propProperties, onAddProperty, onEditP
       return { success: false, error: err.message || 'An error occurred while deleting property' };
     }
   };
-
-  // handleInputChange is now handled by DynamicForm
-
-  // handleAmenitiesChange is now handled by DynamicForm
-
+  
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter(file => {
@@ -207,28 +191,16 @@ const PropertyManagement = ({ properties: propProperties, onAddProperty, onEditP
     return Object.keys(newErrors).length === 0;
   };
 
-  const uploadMedia = async (propertyId) => {
-    try {
-      // Upload new images
-      if (images.length > 0) {
-        const imageFormData = new FormData();
-        images.forEach(image => {
-          imageFormData.append('images', image);
-        });
-        await propertiesAPI.uploadImages(propertyId, imageFormData);
-      }
-
-      // Upload new videos
-      if (videos.length > 0) {
-        const videoFormData = new FormData();
-        videos.forEach(video => {
-          videoFormData.append('video', video);
-        });
-        await propertiesAPI.uploadVideos(propertyId, videoFormData);
-      }
-    } catch (error) {
-      console.error('Error uploading media:', error);
-      throw new Error('Failed to upload media files');
+  const handleMediaUpload = async (propertyId) => {
+    if (images.length > 0) {
+      const imageForm = new FormData();
+      images.forEach((img) => imageForm.append("images", img));
+      await propertiesAPI.uploadImages(propertyId, imageForm);
+    }
+    if (videos.length > 0) {
+      const videoForm = new FormData();
+      videos.forEach((v) => videoForm.append("video", v));
+      await propertiesAPI.uploadVideos(propertyId, videoForm);
     }
   };
 
@@ -244,35 +216,32 @@ const PropertyManagement = ({ properties: propProperties, onAddProperty, onEditP
         ...formData,
         price: parseFloat(formData.price),
         area: parseFloat(formData.area),
-        bedrooms: parseInt(formData.bedrooms) || 0,
+        bedrooms: formData.bedrooms,
         bathrooms: parseInt(formData.bathrooms) || 0,
         totalFloors: parseInt(formData.totalFloors) || null,
         maintenance: parseFloat(formData.maintenance) || null,
-        amenities: formData.amenities
+        amenities: formData.amenities,
       };
 
-      let result;
       if (editingProperty) {
-        result = await handleUpdateProperty(editingProperty._id, propertyData);
-        if (result.success) {
-          await uploadMedia(editingProperty._id);
-        } else {
-          throw new Error(result.error);
-        }
+        const result = await handleUpdateProperty(
+          editingProperty._id,
+          propertyData
+        );
+        if (!result.success) throw new Error(result.error);
       } else {
-        result = await handleAddProperty(propertyData);
-        if (result.success) {
-          await uploadMedia(result.data._id);
-        } else {
-          throw new Error(result.error);
-        }
+        const result = await handleAddProperty(propertyData);
+        if (!result.success) throw new Error(result.error);
       }
+
+      // After create/update, fetch latest properties
+      await fetchProperties();
 
       setShowForm(false);
       resetForm();
     } catch (error) {
-      console.error('Error saving property:', error);
-      setErrors({ submit: error.message || 'Failed to save property' });
+      console.error("Error saving property:", error);
+      setErrors({ submit: error.message || "Failed to save property" });
     } finally {
       setIsSubmitting(false);
     }

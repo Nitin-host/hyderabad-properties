@@ -83,7 +83,6 @@ export const WishlistProvider = ({ children }) => {
       const localFavoritesIds = favorites.map(f => f._id);
       const response = await authAPI.getFavorites();
       const userFavorites = response.data || [];
-
       // Add any local favorites not already in user favorites
       for (const fId of localFavoritesIds) {
         if (!userFavorites.some(f => f._id.toString() === fId.toString())) {
