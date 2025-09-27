@@ -43,23 +43,16 @@ const labelClasses =
       {/* Sidebar */}
       <div className="relative">
         <div
-          className={`fixed left-0 top-0 h-full bg-gray-800 shadow-lg transition-all duration-200 ease-out z-40
-            lg:${
-              isDesktopCollapsed
-                ? "sticky lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)]"
-                : "sticky lg:top-16 lg:h-[calc(100vh-4rem)]"
-            } lg:translate-x-0 lg:border-r lg:border-gray-700 ${
-            isDesktopCollapsed && isHovered ? "lg:shadow-lg" : "lg:shadow-none"
-          }
-            ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          className={`bg-gray-800 shadow-lg transition-all duration-200 ease-out z-40
             ${
-              isDesktopCollapsed
-                ? isHovered
-                  ? "lg:w-64"
-                  : "lg:w-16"
-                : "lg:w-64"
+              isOpen
+                ? "fixed left-0 top-0 h-full translate-x-0"
+                : "fixed left-0 top-0 h-full -translate-x-full"
             }
-            w-64`}
+          lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh)] lg:translate-x-0 lg:border-r lg:border-gray-700
+          ${isDesktopCollapsed && isHovered ? "lg:shadow-lg" : "lg:shadow-none"}
+          ${isDesktopCollapsed ? (isHovered ? "lg:w-64" : "lg:w-16") : "lg:w-64"}
+          w-64`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
@@ -130,7 +123,9 @@ const labelClasses =
                     if (isAuthenticated) onClose(); // 👈 close if logged in
                   }}
                   className={linkClasses(!isAuthenticated ? "opacity-75" : "")}
-                  title={isAuthenticated ? "Profile" : "Profile (Login required)"}
+                  title={
+                    isAuthenticated ? "Profile" : "Profile (Login required)"
+                  }
                 >
                   <User size={20} className="flex-shrink-0" />
                   <span className={labelClasses}>Profile</span>

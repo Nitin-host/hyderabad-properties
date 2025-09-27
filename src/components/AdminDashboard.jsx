@@ -8,7 +8,7 @@ import AdminStats from "./AdminStats"; // new component for stats
 const AdminDashboard = () => {
   const { user, hasAdminAccess, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("properties");
+  const [activeTab, setActiveTab] = useState("stats");
 
   React.useEffect(() => {
     if (!hasAdminAccess()) {

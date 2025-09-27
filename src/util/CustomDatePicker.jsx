@@ -3,12 +3,7 @@ import { useState, useEffect, useRef } from "react";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const CustomDatePicker = ({
-  value,
-  onChange,
-  minDate,
-  placeholder = "YYYY-MM-DD",
-}) => {
+const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [mode, setMode] = useState("day"); // 'day', 'month', 'year'
   const [yearRangeStart, setYearRangeStart] = useState(
@@ -18,7 +13,6 @@ const CustomDatePicker = ({
     value ? new Date(value) : new Date()
   );
   const calendarRef = useRef();
-  const yearDropdownRef = useRef();
 
   const today = new Date();
   const min = minDate ? new Date(minDate) : null;

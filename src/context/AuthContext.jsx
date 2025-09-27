@@ -83,6 +83,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.login({ email, password });
 
+      // 🟢 Case 1: OTP required (super_admin)
+      if (response.success && response.otpRequired) {
+        return {
+          success: true,
+          otpRequired: true,
+          email: email,
+          message: response.message || "OTP sent to your email",
+        };
+      }
+
+      // 🟢 Case 2: Normal login
       if (response.success && response.data?.token) {
         localStorage.setItem("authToken", response.data.token);
         if (response.data.refreshToken) {
@@ -92,6 +103,7 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         return { success: true };
       }
+
       return {
         success: false,
         error: response.message || "Invalid credentials",
@@ -105,6 +117,65 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
+
+  // 🟢 New: Verify OTP for super_admin
+  const verifyOtp = async (email, otp) => {
+    setIsLoading(true);
+    try {
+      const response = await authAPI.verifyOtp({ email, otp });
+
+      if (response.success && response.data?.token) {
+        localStorage.setItem("authToken", response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        setUser(response.data.user);
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: response.message || "OTP verification failed",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || "OTP verification failed. Please try again.",
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 🟢 Forgot Password
+  const forgotPassword = async (email) => {
+    try {
+      const response = await authAPI.forgotPassword({ email });
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || "Failed to send reset link",
+      };
+    }
+  };
+
+  // 🟢 Reset Password
+  const resetPassword = async (token, newPassword) => {
+    try {
+      const response = await authAPI.resetPassword(token, {
+        password: newPassword,
+      });
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || "Password reset failed",
+      };
+    }
+  };
+
 
   const register = async (name, email, password, phone) => {
     setIsLoading(true);
@@ -151,6 +222,9 @@ export const AuthProvider = ({ children }) => {
     user,
     isLoading,
     login,
+    verifyOtp,
+    forgotPassword,
+    resetPassword,
     register,
     logout,
     isAuthenticated: !!user,

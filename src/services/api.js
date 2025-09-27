@@ -82,6 +82,8 @@ api.interceptors.response.use(
 // API endpoints
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
+  verifyOtp: (userData)=> api.post('/auth/verify-otp', userData),
+  
   register: (userData) => api.post("/auth/register", userData),
   logout: () => api.post("/auth/logout"),
   refreshToken: () => api.post("/auth/refresh"),
@@ -103,7 +105,9 @@ export const propertiesAPI = {
   getAll: (params) => api.get('/properties', { params }),
   getById: (id) => api.get(`/properties/${id}`),
   createProperty: (data) => api.post('/properties', data),
-  updateProperty: (id, data) => api.put(`/properties/${id}`, data),
+  updateProperty: (id, data) =>{
+    return api.put(`/properties/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   deleteProperty: (id) => api.delete(`/properties/${id}`),
   search: (query) => api.get('/properties/search', { params: query }),
   uploadImages: (propertyId, formData) => {
@@ -114,7 +118,7 @@ export const propertiesAPI = {
     });
   },
   uploadVideos: (propertyId, formData) => {
-    return api.post(`/properties/${propertyId}/videos`, formData, {
+    return api.post(`/properties/${propertyId}/video`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -128,11 +132,11 @@ export const usersAPI = {
   getAll: (params) => api.get("/users", { params }),
   getById: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
-  delete: (id) => api.delete(`/users/${id}`),
+  delete: (id) => api.delete(`/auth/${id}`),
   // Admin-specific endpoints
   createAdmin: (userData) => api.post("/auth/admin/create", userData),
   getAdmins: (params) => api.get("/auth", { params }),
-  updateUserRole: (id, role) => api.patch(`/users/${id}/role`, { role }),
+  updateUserRole: (id, role) => api.put(`/auth/${id}/role`, { role }),
 };
 
 // Generic API methods for custom endpoints
