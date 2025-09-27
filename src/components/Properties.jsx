@@ -119,69 +119,41 @@ const Properties = () => {
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
-    propertyType: '',
-    priceRange: '',
-    bedrooms: '',
-    city: ''
+    propertyType: "",
+    priceRange: "",
+    bedrooms: "",
+    city: "",
   });
 
-  // Property management functions
-  const handleAddProperty = (newProperty) => {
-    const updatedProperties = [...properties, newProperty];
-    setProperties(updatedProperties);
-    // In a real app, you would also send this to your backend API
-    console.log('Adding property:', newProperty);
-  };
-
-  const handleEditProperty = (updatedProperty) => {
-    const updatedProperties = properties.map(property => 
-      property.id === updatedProperty.id ? updatedProperty : property
-    );
-    setProperties(updatedProperties);
-    // In a real app, you would also send this to your backend API
-    console.log('Updating property:', updatedProperty);
-  };
-
-  const handleDeleteProperty = (propertyId) => {
-    const updatedProperties = properties.filter(property => property.id !== propertyId);
-    setProperties(updatedProperties);
-    // In a real app, you would also send this to your backend API
-    console.log('Deleting property:', propertyId);
-  };
-
   // Fetch properties from API
-  useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await propertiesAPI.getAll();
-        
-        // Handle different response structures
-        const propertiesData = response.data || response.properties || response;
-        
-        if (Array.isArray(propertiesData)) {
-          setProperties(propertiesData);
-          setFilteredProperties(propertiesData);
-        } else {
-          console.warn('Unexpected API response structure:', response);
-          setProperties([]);
-          setFilteredProperties([]);
-        }
-      } catch (err) {
-        console.error('Error fetching properties:', err);
-        setError(err.message || 'Failed to load properties. Please try again later.');
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await propertiesAPI.getAll();
+      const propertiesData = response.data || response.properties || response;
+      if (Array.isArray(propertiesData)) {
+        setProperties(propertiesData);
+        setFilteredProperties(propertiesData);
+      } else {
         setProperties([]);
         setFilteredProperties([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      setError(
+        err.message || "Failed to load properties. Please try again later."
+      );
+      setProperties([]);
+      setFilteredProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProperties();
   }, []);
 
@@ -190,29 +162,29 @@ const Properties = () => {
     let filtered = properties;
 
     // Search filter
-     if (searchTerm) {
-       console.log("Applying search filter:", searchTerm, filtered);
-       filtered = filtered.filter((property) => {
-         const title = property?.title || "";
-         const location = property?.location || "";
-         return (
-           title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           location.toLowerCase().includes(searchTerm.toLowerCase())
-         );
-       });
-     }
+    if (searchTerm) {
+      console.log("Applying search filter:", searchTerm, filtered);
+      filtered = filtered.filter((property) => {
+        const title = property?.title || "";
+        const location = property?.location || "";
+        return (
+          title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          location.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      });
+    }
 
     // Property type filter
     if (filters.propertyType) {
-      filtered = filtered.filter(property => 
-        property.propertyType === filters.propertyType
+      filtered = filtered.filter(
+        (property) => property.propertyType === filters.propertyType
       );
     }
 
     // Price range filter
     if (filters.priceRange) {
-      const [min, max] = filters.priceRange.split('-').map(Number);
-      filtered = filtered.filter(property => {
+      const [min, max] = filters.priceRange.split("-").map(Number);
+      filtered = filtered.filter((property) => {
         if (max) {
           return property.price >= min && property.price <= max;
         }
@@ -222,8 +194,8 @@ const Properties = () => {
 
     // Bedrooms filter
     if (filters.bedrooms) {
-      filtered = filtered.filter(property => 
-        property.bedrooms === filters.bedrooms
+      filtered = filtered.filter(
+        (property) => property.bedrooms === filters.bedrooms
       );
     }
 
@@ -231,20 +203,20 @@ const Properties = () => {
   }, [searchTerm, filters, properties]);
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [filterType]: value
+      [filterType]: value,
     }));
   };
 
   const clearFilters = () => {
     setFilters({
-      propertyType: '',
-      priceRange: '',
-      bedrooms: '',
-      city: ''
+      propertyType: "",
+      priceRange: "",
+      bedrooms: "",
+      city: "",
     });
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   if (loading) {
@@ -255,7 +227,10 @@ const Properties = () => {
             <div className="h-8 bg-gray-700 rounded w-1/4 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="bg-gray-800 rounded-lg shadow-md p-4">
+                <div
+                  key={index}
+                  className="bg-gray-800 rounded-lg shadow-md p-4"
+                >
                   <div className="h-48 bg-gray-700 rounded mb-4"></div>
                   <div className="h-4 bg-gray-700 rounded mb-2"></div>
                   <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
@@ -275,10 +250,12 @@ const Properties = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center h-64">
             <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">Error Loading Properties</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Error Loading Properties
+            </h3>
             <p className="text-gray-400 text-center mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Try Again
@@ -363,9 +340,7 @@ const Properties = () => {
         {canManageProperties() && (
           <PropertyManagement
             properties={properties}
-            onAddProperty={handleAddProperty}
-            onEditProperty={handleEditProperty}
-            onDeleteProperty={handleDeleteProperty}
+            refreshProperties={fetchProperties}
           />
         )}
 
@@ -392,10 +367,6 @@ const Properties = () => {
               <PropertyCard
                 key={property._id?.$oid || property._id || property.id || index}
                 property={property}
-                onEdit={canManageProperties() ? handleEditProperty : undefined}
-                onDelete={
-                  canManageProperties() ? handleDeleteProperty : undefined
-                }
               />
             ))}
           </div>

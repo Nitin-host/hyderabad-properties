@@ -10,6 +10,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import Wishlist from "./components/Wishlist";
 import Profile from "./components/Profile";
+import Footer from "./components/Footer";
 
 function App() {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true);
@@ -20,51 +21,61 @@ function App() {
     <AuthProvider>
       <WishlistProvider>
         <Router>
-          <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="lg:h-screen">
-        <NavBar
-          isDesktopCollapsed={isDesktopCollapsed}
-          setIsDesktopCollapsed={setIsDesktopCollapsed}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          onLoginClick={() => setIsLoginModalOpen(true)}
-        />
-        
-        {/* Main content area with sidebar inside */}
-        <div className="lg:flex lg:h-[calc(100vh-4rem)]">
-          {/* Sidebar */}
-          <Sidebar
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            isDesktopCollapsed={isDesktopCollapsed}
-            onLoginClick={() => setIsLoginModalOpen(true)}
-          />
-          
-          {/* Content area - takes remaining space in flex layout */}
-          <main className={`flex-1 transition-all duration-200 ${
-            isDesktopCollapsed ? "lg:ml-16" : "lg:ml-64"
-          }`}>
-            <Routes>
-              <Route path="/" element={<Properties />} />
-              <Route path="/property/:id" element={<PropertyDetailsPage />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/favorites" element={<Wishlist />} />
-              <Route path='/profile' element={<Profile/>} />
-              <Route path="*" element={<div className="p-6">404 Not Found</div>} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-      
-      {/* Login Modal */}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
-      />
-    </div>
-    </Router>
-    </WishlistProvider>
-  </AuthProvider>
+          <div className="flex flex-col min-h-screen bg-gray-900 text-gray-100">
+            {/* Navbar */}
+            <NavBar
+              isDesktopCollapsed={isDesktopCollapsed}
+              setIsDesktopCollapsed={setIsDesktopCollapsed}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+              onLoginClick={() => setIsLoginModalOpen(true)}
+            />
+
+            {/* Main + Sidebar (flex-1 makes this fill available height) */}
+            <div className="lg:flex">
+              {/* Sidebar */}
+              <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                isDesktopCollapsed={isDesktopCollapsed}
+                onLoginClick={() => setIsLoginModalOpen(true)}
+              />
+
+              {/* Content */}
+              <main
+                className={`flex-1 transition-all duration-200 ${
+                  isDesktopCollapsed ? "lg:ml-0" : "lg:ml-1"
+                }`}
+              >
+                <Routes>
+                  <Route path="/" element={<Properties />} />
+                  <Route
+                    path="/property/:id"
+                    element={<PropertyDetailsPage />}
+                  />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/favorites" element={<Wishlist />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route
+                    path="*"
+                    element={<div className="p-6">404 Not Found</div>}
+                  />
+                </Routes>
+              </main>
+            </div>
+
+            {/* Footer - always at bottom */}
+            <Footer />
+
+            {/* Login Modal */}
+            <LoginModal
+              isOpen={isLoginModalOpen}
+              onClose={() => setIsLoginModalOpen(false)}
+            />
+          </div>
+        </Router>
+      </WishlistProvider>
+    </AuthProvider>
   );
 }
 

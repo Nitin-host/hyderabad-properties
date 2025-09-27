@@ -1,4 +1,38 @@
-import { Label } from "recharts";
+const AMENITY_LIST = [
+  "clubhouseGym",
+  "school",
+  "hospital",
+  "mall",
+  "park",
+  "balcony",
+  "petFriendly",
+  "cupBoard",
+  "lift",
+  "wifi",
+  "ac",
+  "gym",
+  "swimmingPool",
+  "kidsPlayArea",
+  "clubHouse",
+  "intercom",
+  "spa",
+  "servantRoom",
+  "security",
+  "shoppingCenter",
+  "gasConnection",
+  "sewageConnection",
+  "rainWaterHarvesting",
+  "houseKeeping",
+  "powerBackup",
+  "visitorParking",
+  "inductionHob",
+  "privateGarden",
+  "caretaker",
+  "washingMachine",
+  "gasLeakage",
+  "earthquake",
+  "fireAlarm",
+];
 
 // Property Management Form Configuration
 export const propertyFormConfig = {
@@ -131,10 +165,10 @@ export const propertyFormConfig = {
           type: "select",
           label: "Parking Available",
           options: [
-            { value: "bike", label: "Bike" },
-            { value: "car", label: "Car" },
-            { value: "car & bike", label: "Car & Bike" },
-            { value: "none", label: "None" },
+            { value: "Bike", label: "Bike" },
+            { value: "Car", label: "Car" },
+            { value: "Car & Bike", label: "Car & Bike" },
+            { value: "None", label: "None" },
           ],
         },
         {
@@ -253,7 +287,7 @@ export const propertyFormConfig = {
           type: "radio-date",
           label: "Property Availability",
           options: [
-            { value: "immediate", label: "Immediate" },
+            { value: "Immediate", label: "Immediate" },
             { value: "date", label: "Select Date" },
           ],
         },
@@ -296,41 +330,12 @@ export const propertyFormConfig = {
       id: "amenities",
       title: "Amenities & Features",
       type: "checkbox-group",
-      fields: [
-        { name: "clubhouseGym", label: "Clubhouse Gym" },
-        { name: "school", label: "School Nearby" },
-        { name: "hospital", label: "Hospital Nearby" },
-        { name: "mall", label: "Mall Nearby" },
-        { name: "park", label: "Park Nearby" },
-        { name: "balcony", label: "Balcony" },
-        { name: "petFriendly", label: "Pet Friendly" },
-        { name: "cupBoard", label: "Cupboard" },
-        { name: "lift", label: "Lift/Elevator" },
-        { name: "wifi", label: "WiFi" },
-        { name: "ac", label: "Air Conditioning" },
-        { name: "gym", label: "Gym" },
-        { name: "swimmingPool", label: "Swimming Pool" },
-        { name: "kidsPlayArea", label: "Kids Play Area" },
-        { name: "clubHouse", label: "Club House" },
-        { name: "intercom", label: "Intercom" },
-        { name: "spa", label: "Spa" },
-        { name: "servantRoom", label: "Servant Room" },
-        { name: "security", label: "24x7 Security" },
-        { name: "shoppingCenter", label: "Shopping Center" },
-        { name: "gasConnection", label: "Gas Connection" },
-        { name: "sewageConnection", label: "Sewage Connection" },
-        { name: "rainWaterHarvesting", label: "Rain Water Harvesting" },
-        { name: "houseKeeping", label: "House Keeping" },
-        { name: "powerBackup", label: "Power Backup" },
-        { name: "visitorParking", label: "Visitor Parking" },
-        { name: "inductionHob", label: "Induction Hob" },
-        { name: "privateGarden", label: "Private Garden" },
-        { name: "caretaker", label: "Caretaker" },
-        { name: "washingMachine", label: "Washing Machine" },
-        { name: "gasLeakage", label: "Gas Leakage Detector" },
-        { name: "earthquake", label: "Earthquake Resistant" },
-        { name: "fireAlarm", label: "Fire Alarm" },
-      ],
+      fields: AMENITY_LIST.map((amenity) => ({
+        name: amenity,
+        label: amenity
+          .replace(/([A-Z])/g, " $1") // split camelCase
+          .replace(/^./, (str) => str.toUpperCase()), // capitalize first letter
+      })),
     },
   ],
 
@@ -365,39 +370,6 @@ export const propertyFormConfig = {
     statusOfElectricity: "",
     lift: "",
     // Amenities (all default to false)
-    clubhouseGym: false,
-    school: false,
-    hospital: false,
-    mall: false,
-    park: false,
-    balcony: false,
-    petFriendly: false,
-    cupBoard: false,
-    lift: false,
-    wifi: false,
-    ac: false,
-    gym: false,
-    swimmingPool: false,
-    kidsPlayArea: false,
-    clubHouse: false,
-    intercom: false,
-    spa: false,
-    servantRoom: false,
-    security: false,
-    shoppingCenter: false,
-    gasConnection: false,
-    sewageConnection: false,
-    rainWaterHarvesting: false,
-    houseKeeping: false,
-    powerBackup: false,
-    visitorParking: false,
-    inductionHob: false,
-    privateGarden: false,
-    caretaker: false,
-    washingMachine: false,
-    gasLeakage: false,
-    earthquake: false,
-    fireAlarm: false,
     amenities: [],
   },
 
@@ -613,7 +585,9 @@ export const formHelpers = {
 
   // Update amenities array based on checkbox changes
   updateAmenities: (formData, fieldName, checked) => {
+    console.log("Updating amenities:", fieldName, checked);
     const amenities = [...(formData.amenities || [])];
+    console.log("Current amenities before update:", amenities);
     if (checked && !amenities.includes(fieldName)) {
       amenities.push(fieldName);
     } else if (!checked && amenities.includes(fieldName)) {

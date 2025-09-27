@@ -5,6 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useWishlist } from '../context/WishlistContext';
 import PropertyShare from './PropertyShare';
 import StickyContactForm from './ContactForm';
+import { Play } from 'lucide-react';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams();
@@ -13,21 +14,45 @@ const PropertyDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [autoSlide, setAutoSlide] = useState(true);
   const autoSlideIntervalRef = useRef(null);
   const { isFavorite, toggleFavorite } = useWishlist();
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+
+  const openImageModal = (index) => {
+    setModalImageIndex(index);
+    setIsImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setIsImageModalOpen(false);
+  };
+
 
   useEffect(() => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
         const response = await propertiesAPI.getById(id);
-        setProperty(response.data);
+        const fetchedProperty = response.data;
+
+        // List of statuses for which the page should not show
+        const blockedStatuses = ["sold", "rented", "occupied"];
+
+        if (blockedStatuses.includes(fetchedProperty.status?.toLowerCase())) {
+          // Redirect to home or another page
+          navigate("/", { replace: true });
+          return;
+        }
+
+        setProperty(fetchedProperty);
       } catch (err) {
-        setError('Failed to load property details');
-        console.error('Error fetching property:', err);
+        setError("Failed to load property details");
+        console.error("Error fetching property:", err);
       } finally {
         setLoading(false);
       }
@@ -36,7 +61,8 @@ const PropertyDetailsPage = () => {
     if (id) {
       fetchProperty();
     }
-  }, [id]);
+  }, [id, navigate]);
+
 
   // Auto-slide effect for images
   useEffect(() => {
@@ -84,18 +110,6 @@ const PropertyDetailsPage = () => {
   const handleFavoriteToggle = () => {
     if (property) {
       toggleFavorite(property._id);
-    }
-  };
-
-  const nextVideo = () => {
-    if (property?.videos?.length > 0) {
-      setCurrentVideoIndex((prev) => (prev + 1) % property.videos.length);
-    }
-  };
-
-  const prevVideo = () => {
-    if (property?.videos?.length > 0) {
-      setCurrentVideoIndex((prev) => (prev - 1 + property.videos.length) % property.videos.length);
     }
   };
 
@@ -171,16 +185,26 @@ const PropertyDetailsPage = () => {
                 <div className="relative">
                   <img
                     src={
-                      property.images[
-                        currentImageIndex
-                      ]?.cloudinaryUrl?.trim() || "/api/placeholder/800/400"
+                      property.images[currentImageIndex]?.presignUrl?.trim() ||
+                      "/api/placeholder/800/400"
                     }
                     alt={
                       property.images[currentImageIndex]?.caption ||
                       property.title
                     }
-                    className="w-full h-96 object-cover rounded-lg"
+                    className="w-full h-96 object-cover rounded-lg cursor-pointer"
+                    onClick={() => {
+                      setModalImageIndex(currentImageIndex);
+                      setIsImageModalOpen(true);
+                    }}
                   />
+                  {/* <button
+                    onClick={() => openImageModal(currentImageIndex)}
+                    className="absolute bottom-4 right-4"
+                  >
+                    ⛶
+                  </button> */}
+
                   {property.images.length > 1 && (
                     <>
                       <button
@@ -230,6 +254,74 @@ const PropertyDetailsPage = () => {
                     </>
                   )}
                 </div>
+                {isImageModalOpen && (
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+                    onTouchStart={(e) =>
+                      (window.touchStartX = e.changedTouches[0].screenX)
+                    }
+                    onTouchEnd={(e) => {
+                      const touchEndX = e.changedTouches[0].screenX;
+                      const deltaX = window.touchStartX - touchEndX;
+
+                      if (deltaX > 50) {
+                        // Swipe left → next image
+                        setModalImageIndex(
+                          (modalImageIndex + 1) % property.images.length
+                        );
+                      } else if (deltaX < -50) {
+                        // Swipe right → previous image
+                        setModalImageIndex(
+                          (modalImageIndex - 1 + property.images.length) %
+                            property.images.length
+                        );
+                      }
+                    }}
+                  >
+                    {/* Close button */}
+                    <button
+                      onClick={closeImageModal}
+                      className="absolute top-4 right-4 text-white text-2xl"
+                    >
+                      ✕
+                    </button>
+
+                    {/* Image */}
+                    <img
+                      src={
+                        property.images[
+                          modalImageIndex
+                        ]?.cloudinaryUrl?.trim() ||
+                        property.images[modalImageIndex]?.presignUrl?.trim()
+                      }
+                      alt="Expanded"
+                      className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+                    />
+
+                    {/* Desktop-only arrows */}
+                    <button
+                      onClick={() =>
+                        setModalImageIndex(
+                          (modalImageIndex - 1 + property.images.length) %
+                            property.images.length
+                        )
+                      }
+                      className="hidden md:block absolute left-4 text-white text-3xl"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      onClick={() =>
+                        setModalImageIndex(
+                          (modalImageIndex + 1) % property.images.length
+                        )
+                      }
+                      className="hidden md:block absolute right-4 text-white text-3xl"
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
 
                 {/* Image Thumbnails */}
                 {property.images.length > 1 && (
@@ -245,11 +337,8 @@ const PropertyDetailsPage = () => {
                         }`}
                       >
                         <img
-                          src={
-                            image.cloudinaryUrl?.trim() ||
-                            "/api/placeholder/80/80"
-                          }
-                          alt={image.caption || `Image ${index + 1}`}
+                          src={image.presignUrl}
+                          alt={image.key || `Image ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -263,25 +352,35 @@ const PropertyDetailsPage = () => {
             {property.videos && property.videos.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">Videos</h2>
-
-                {/* Video Container */}
-                <div className="bg-gray-900 rounded-xl shadow-lg overflow-hidden">
-                  <video
-                    src={property.videos[0]?.cloudinaryUrl?.trim()}
-                    controls
-                    className="w-full h-96 object-cover"
-                    poster="/api/placeholder/800/400"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                <div className="relative bg-gray-900 rounded-xl shadow-lg overflow-hidden h-96">
+                  {!isVideoPlaying ? (
+                    <div
+                      className="w-full h-full flex items-center justify-center cursor-pointer relative"
+                      onClick={() => setIsVideoPlaying(true)}
+                    >
+                      <img
+                        src={
+                          property.videos[0]?.thumbnail ||
+                          "/api/placeholder/800/400"
+                        }
+                        alt="Video Thumbnail"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Play size={65} />
+                      </div>
+                    </div>
+                  ) : (
+                    <video
+                      src={property.videos[0]?.presignUrl}
+                      controls
+                      autoPlay
+                      controlsList="nodownload noplaybackrate"
+                      disablePictureInPicture
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
-
-                {/* Caption */}
-                {property.videos[0]?.caption && (
-                  <p className="mt-3 px-3 py-2 bg-gray-800 text-gray-200 rounded-lg text-sm">
-                    {property.videos[0].caption}
-                  </p>
-                )}
               </div>
             )}
 
@@ -296,7 +395,7 @@ const PropertyDetailsPage = () => {
 
           {/* Right Column - Property Details */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-800 rounded-lg shadow-lg p-4 lg:fixed lg:top-24 lg:right-4 lg:w-80 lg:z-30">
+            <div className="bg-gray-800 rounded-lg shadow-lg p-4 lg:sticky lg:top-24 lg:w-80 lg:h-fit lg:self-start">
               {/* Tabs */}
               <div className="flex mb-6 bg-gray-900/60 rounded-xl p-1 backdrop-blur-sm border border-gray-700">
                 {["overview", "details", "amenities", "location"].map((tab) => (
@@ -327,13 +426,41 @@ const PropertyDetailsPage = () => {
                         </p>
                       </div>
                       <div>
+                        <p className="text-xs text-gray-400">Total Floors</p>
+                        <p className="font-medium text-sm">
+                          {property.totalFloors || "N/A"}
+                        </p>
+                      </div>
+                      <div>
                         <p className="text-xs text-gray-400">Status</p>
                         <p className="font-medium text-sm">{property.status}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Availability</p>
+                        <p className="font-medium text-sm">
+                          {property.availabilityDate
+                            ? new Date(
+                                property.availabilityDate
+                              ).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })
+                            : property.availability || "N/A"}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Size</p>
                         <p className="font-medium text-sm">
                           {property.size} {property.sizeUnit}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">
+                          Furnished Status
+                        </p>
+                        <p className="font-medium text-sm">
+                          {property.furnished}
                         </p>
                       </div>
                       <div>
@@ -349,21 +476,15 @@ const PropertyDetailsPage = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Furnished Status</p>
+                        <p className="text-xs text-gray-400">Balconies</p>
                         <p className="font-medium text-sm">
-                          {property.furnished}
+                          {property.balconies > 0 ? property.balconies : "None"}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Maintenance</p>
                         <p className="font-medium text-sm">
                           ₹{property.maintenance}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Broker Charge</p>
-                        <p className="font-medium text-sm">
-                          {property.brokerCharge}
                         </p>
                       </div>
                     </div>
@@ -445,7 +566,7 @@ const PropertyDetailsPage = () => {
                           >
                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             <span className="text-gray-300 text-xs">
-                              {amenity}
+                              {amenity.toUpperCase()}
                             </span>
                           </div>
                         ))}
@@ -463,18 +584,18 @@ const PropertyDetailsPage = () => {
                     <h3 className="font-semibold mb-3 text-white text-sm">
                       Location Details
                     </h3>
-                    <div className="space-y-2 mb-2">
+                    <div className="d-flex flex-col space-y-2 mb-4">
                       <div>
                         <p className="text-xs text-gray-400">Address</p>
                         <p className="font-medium text-xs">
                           {property.location}
                         </p>
                       </div>
-                      {property?.landmark && (
+                      {property?.landmarks && (
                         <div>
                           <p className="text-xs text-gray-400">Landmark</p>
                           <p className="font-medium text-xs">
-                            {property.landmark}
+                            {property.landmarks}
                           </p>
                         </div>
                       )}
@@ -507,6 +628,14 @@ const PropertyDetailsPage = () => {
                             </span>
                             <span className="font-medium text-xs">
                               {property.agent.phone}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-300 text-xs">
+                              Broker Charge:
+                            </span>
+                            <span className="font-medium text-xs">
+                              {property.brokerCharge}
                             </span>
                           </div>
                         </div>
