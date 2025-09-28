@@ -5,6 +5,7 @@ import { propertiesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Search, Filter, MapPin, Home, DollarSign, Grid, List, AlertCircle, X } from 'lucide-react';
 import StickyContactForm from './ContactForm';
+import StickyWhatsApp from './StickyWhatsApp.jsx';
 
 // FilterPopover Component
 const FilterPopover = ({ filters, handleFilterChange, clearFilters }) => {
@@ -37,7 +38,8 @@ const FilterPopover = ({ filters, handleFilterChange, clearFilters }) => {
       >
         <Filter size={20} />
       </button>
-      <StickyContactForm/>
+      {/* <StickyContactForm/> */}
+      <StickyWhatsApp />
       {isOpen && (
         <div className="absolute right-0 mt-2 w-72 bg-gray-800 rounded-lg shadow-lg z-10 p-4">
           <div className="flex justify-between items-center mb-4">
@@ -163,7 +165,6 @@ const Properties = () => {
 
     // Search filter
     if (searchTerm) {
-      console.log("Applying search filter:", searchTerm, filtered);
       filtered = filtered.filter((property) => {
         const title = property?.title || "";
         const location = property?.location || "";
@@ -245,25 +246,7 @@ const Properties = () => {
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center justify-center h-64">
-            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Error Loading Properties
-            </h3>
-            <p className="text-gray-400 text-center mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    throw error;
   }
 
   return (

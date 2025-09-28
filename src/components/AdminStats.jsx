@@ -27,6 +27,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [timeRange, setTimeRange] = useState("month"); // week, month, year
   const [creationStats, setCreationStats] = useState([]);
+  const [error, setError] = useState();
 
   useEffect(() => {
     if (!hasAdminAccess()) {
@@ -40,7 +41,7 @@ const AdminDashboard = () => {
             mapCreationStats(res.data.monthlyCreationStats);
           }
         })
-        .catch((err) => console.error("Dashboard fetch error:", err));
+        .catch((err) => setError(err));
     }
   }, [hasAdminAccess, navigate, timeRange]);
 
@@ -63,6 +64,10 @@ const AdminDashboard = () => {
     });
     setCreationStats(mapped);
   };
+
+    if (error) {
+      throw error;
+    }
 
   if (!user || !hasAdminAccess() || !stats) {
     return <p className="text-center text-gray-400">Loading Dashboard...</p>;

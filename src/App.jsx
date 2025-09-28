@@ -11,6 +11,8 @@ import { WishlistProvider } from "./context/WishlistContext";
 import Wishlist from "./components/Wishlist";
 import Profile from "./components/Profile";
 import Footer from "./components/Footer";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ContactPage from "./components/ContactForm";
 
 function App() {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true);
@@ -47,20 +49,23 @@ function App() {
                   isDesktopCollapsed ? "lg:ml-0" : "lg:ml-1"
                 }`}
               >
-                <Routes>
-                  <Route path="/" element={<Properties />} />
-                  <Route
-                    path="/property/:id"
-                    element={<PropertyDetailsPage />}
-                  />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/favorites" element={<Wishlist />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route
-                    path="*"
-                    element={<div className="p-6">404 Not Found</div>}
-                  />
-                </Routes>
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/" element={<Properties />} />
+                    <Route
+                      path="/property/:id"
+                      element={<PropertyDetailsPage />}
+                    />
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/favorites" element={<Wishlist />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path='/contact' element={<ContactPage/>}/>
+                    <Route
+                      path="*"
+                      element={<div className="p-6">404 Not Found</div>}
+                    />
+                  </Routes>
+                </ErrorBoundary>
               </main>
             </div>
 

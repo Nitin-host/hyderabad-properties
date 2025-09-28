@@ -37,7 +37,6 @@ const LoginModal = ({ isOpen, onClose }) => {
 
       if (step === "login") {
         result = await login(formData.email, formData.password);
-        console.log('result', result)
         if (result.otpRequired) {
           setStep("otp");
           setShowSuccess(false);

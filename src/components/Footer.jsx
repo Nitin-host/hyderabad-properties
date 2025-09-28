@@ -30,13 +30,20 @@ export default function Footer() {
                 Contact
               </Link>
             </li>
+            <li>
+              <Link to="/favorites" className="hover:underline">
+                Favorites
+              </Link>
+            </li>
           </ul>
         </div>
 
         {/* Contact Info */}
         <div>
           <h4 className="font-semibold mb-2">Contact Us</h4>
-          <p className="text-sm text-gray-400 mb-2">Kondapur, Hyderabad, India</p>
+          <p className="text-sm text-gray-400 mb-2">
+            Kondapur, Hyderabad, India
+          </p>
           <p className="text-sm">
             Phone:{" "}
             <a href="tel:+919999999999" className="hover:underline">

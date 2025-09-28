@@ -133,7 +133,6 @@ const PropertyManagement = ({
       videos.forEach((vid) => formDataObj.append("videos", vid));
 
       const res = await propertiesAPI.updateProperty(id, formDataObj);
-      console.log("Update response:", res);
       if (res.success) {
         await fetchProperties();
         if (refreshProperties) await refreshProperties();
@@ -298,27 +297,21 @@ const PropertyManagement = ({
     setErrors({});
 
     try {
-      // Log full formData to debug
-      console.log("FormData before amenities filter:", formData);
-
       const amenitiesList = Array.isArray(formData.amenities)
         ? formData.amenities
         : [];
-      console.log("Selected amenities from formData.amenities:", amenitiesList);
 
       // Prepare property data
       const propertyData = {
         ...formData,
         amenities: amenitiesList, // ensure it's an array
       };
-      console.log("Submitting property data:", propertyData);
 
       if (editingProperty) {
         const result = await handleUpdateProperty(
           editingProperty._id,
           propertyData
         );
-        console.log("Update result:", result);
         if (!result.success) throw new Error(result.error);
       } else {
         const result = await handleAddProperty(propertyData);
@@ -522,7 +515,6 @@ const PropertyManagement = ({
               <DynamicForm
                 formData={formData}
                 onChange={(updatedData) => {
-                  console.log("DynamicForm changed:", updatedData);
                   setFormData(updatedData);
                 }}
                 errors={errors}

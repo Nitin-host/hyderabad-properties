@@ -4,7 +4,6 @@ import CustomDatePicker from '../util/CustomDatePicker';
 
 const DynamicForm = ({ formData, onChange, errors = {} }) => {
   const { sections, styles } = propertyFormConfig;
-console.log("Rendering DynamicForm with data:", formData);
   const handleInputChange = (e, section) => {
     const { name, value, type, checked } = e.target;
 
@@ -18,7 +17,6 @@ console.log("Rendering DynamicForm with data:", formData);
      }
 
      onChange({ ...formData, [key]: updatedArray });
-     console.log("Checkbox updated:", key, updatedArray);
      return;
    } else if (type === "radio-date") {
      onChange({

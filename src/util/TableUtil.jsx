@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Edit, Trash2, ChevronUp, ChevronDown, User } from "lucide-react";
+import { ChevronUp, ChevronDown, User } from "lucide-react";
 
 const isMobile = () => typeof window !== "undefined" && window.innerWidth < 768;
 
@@ -20,7 +20,7 @@ function TableUtil({
   const [filterVals, setFilterVals] = useState(filters);
   const [sortConfig, setSortConfig] = useState({ index: 0, asc: true });
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [mobileView, setMobileView] = useState(isMobile() && enableMobileView);
 
   useEffect(() => {
@@ -162,7 +162,7 @@ function TableUtil({
 
         {/* Actions */}
         {tableActions.length > 0 && (
-          <div className="flex flex-row gap-2 mt-3 flex-wrap">
+          <div className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
             {tableActions.map((action, idx) => {
               const {
                 btnTitle,
@@ -170,20 +170,26 @@ function TableUtil({
                 iconComponent: Icon,
                 btnAction,
                 customRender,
+                isVisible,
               } = action;
+
+              if (typeof isVisible === "function" && !isVisible(row))
+                return null;
+              if (typeof isVisible === "boolean" && !isVisible) return null;
+
               if (typeof customRender === "function")
                 return <span key={idx}>{customRender(row)}</span>;
+              
               return (
                 <button
                   key={idx}
-                  className={`px-2 py-1 text-sm rounded ${
-                    btnClass || "bg-blue-600 hover:bg-blue-700"
-                  } flex items-center gap-1`}
+                  className={`${
+                    btnClass || "text-blue-500 hover:text-blue-400"
+                  } flex items-center`}
                   onClick={() => btnAction(row)}
                   title={btnTitle}
                 >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  {btnTitle}
+                  {Icon ? <Icon size={16} /> : btnTitle}
                 </button>
               );
             })}
@@ -352,9 +358,21 @@ function TableUtil({
                             iconComponent: Icon,
                             btnAction,
                             customRender,
+                            isVisible,
                           } = action;
+
+                          // 🔹 check visibility
+                          if (
+                            typeof isVisible === "function" &&
+                            !isVisible(row)
+                          )
+                            return null;
+                          if (typeof isVisible === "boolean" && !isVisible)
+                            return null;
+
                           if (typeof customRender === "function")
                             return <span key={idx}>{customRender(row)}</span>;
+
                           return (
                             <button
                               key={idx}
@@ -380,48 +398,69 @@ function TableUtil({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-1 my-3 flex-wrap">
-          <button
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-          >
-            First
-          </button>
-          <button
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </button>
-          {[...Array(totalPages)].map((_, idx) => (
+        <div className="flex justify-between items-center gap-3 my-3 flex-wrap">
+          {/* Pagination Buttons */}
+          <div className="flex items-center gap-1 flex-wrap">
             <button
-              key={idx}
-              className={`px-3 py-1 rounded ${
-                currentPage === idx + 1
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-white hover:bg-gray-600"
-              }`}
-              onClick={() => setCurrentPage(idx + 1)}
+              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
             >
-              {idx + 1}
+              First
             </button>
-          ))}
-          <button
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-          <button
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages}
-          >
-            Last
-          </button>
+            <button
+              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </button>
+            {[...Array(totalPages)].map((_, idx) => (
+              <button
+                key={idx}
+                className={`px-3 py-1 rounded ${
+                  currentPage === idx + 1
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-700 text-white hover:bg-gray-600"
+                }`}
+                onClick={() => setCurrentPage(idx + 1)}
+              >
+                {idx + 1}
+              </button>
+            ))}
+            <button
+              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+            <button
+              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </button>
+          </div>
+
+          {/* Rows Per Page Selector */}
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2 py-1 rounded bg-gray-700 text-white border border-gray-500"
+            >
+              {[5, 10, 25, 50, 100].map((num) => (
+                <option key={num} value={num}>
+                  {num}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
     </div>
