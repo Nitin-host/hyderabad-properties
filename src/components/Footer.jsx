@@ -1,19 +1,19 @@
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
+import logo from "../assets/RR_PROP_LOGO.png"
 
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300 border-t mt-auto">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 px-4 py-10 ml-5">
         {/* Branding & Social */}
-        <div>
-          <h3 className="text-xl text-white font-bold mb-2">
-            YourBrand Realty
-          </h3>
-          <p className="mb-4 text-gray-400 text-sm">
-            Trusted property partner in Hyderabad.
-          </p>
+        <div className="flex items-center justify-center md:justify-start mb-4 md:mb-0">
+          <img
+            src={logo}
+            alt="RR Properties Logo"
+            className="h-16 w-auto object-contain"
+          />
         </div>
 
         {/* Quick Links (internal navigation) */}

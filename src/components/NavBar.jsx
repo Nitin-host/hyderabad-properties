@@ -35,22 +35,24 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
       <nav className="bg-gray-800 shadow-md p-4 lg:hidden sticky top-0 z-50">
         <div className="flex items-center justify-between">
           {/* Mobile menu button */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 rounded-lg hover:bg-gray-700"
-        >
-          {isSidebarOpen ? (
-            <X size={24} className="text-gray-300" />
-          ) : (
-            <Menu size={24} className="text-gray-300" />
-          )}
-        </button>
-
-          {/* Title */}
-          <h1 className="text-xl font-bold text-white">
-            Hyderabad Properties
-          </h1>
-
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 rounded-lg hover:bg-gray-700"
+          >
+            {isSidebarOpen ? (
+              <X size={24} className="text-gray-300" />
+            ) : (
+              <Menu size={24} className="text-gray-300" />
+            )}
+          </button>
+          <Link to="/" className="flex items-center space-x-2">
+            <img
+              src="/RR_LOGO.svg"
+              alt="RR Properties"
+              className="h-10 w-auto object-contain"
+            />
+            <span className="text-white font-bold text-xl">RR Properties</span>
+          </Link>
           {/* Mobile actions */}
           <div className="flex items-center space-x-2">
             {/* Auth section */}
@@ -60,13 +62,8 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
                 >
-                  <User
-                    size={20}
-                    className="text-gray-300"
-                  />
-                  <span className="text-sm text-gray-300">
-                    {user.name}
-                  </span>
+                  <User size={20} className="text-gray-300" />
+                  <span className="text-sm text-gray-300">{user.name}</span>
                 </button>
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
@@ -74,12 +71,16 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                       <p className="text-sm text-gray-300">{user.name}</p>
                       <p className="text-xs text-gray-400">{user.email}</p>
                       {user.role && (
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
-                          isSuperAdmin() ? 'bg-purple-600 text-white' :
-                          hasAdminAccess() ? 'bg-blue-600 text-white' :
-                          'bg-gray-600 text-gray-300'
-                        }`}>
-                          {user.role.replace('_', ' ').toUpperCase()}
+                        <span
+                          className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
+                            isSuperAdmin()
+                              ? "bg-purple-600 text-white"
+                              : hasAdminAccess()
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-600 text-gray-300"
+                          }`}
+                        >
+                          {user.role.replace("_", " ").toUpperCase()}
                         </span>
                       )}
                     </div>
@@ -114,8 +115,6 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                 Login
               </button>
             )}
-
-
           </div>
         </div>
       </nav>
@@ -124,9 +123,14 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
       <div className="hidden lg:flex items-center justify-between bg-gray-800 shadow-md p-4 w-full sticky top-0 z-50">
         <div className="flex items-center space-x-4">
           {/* Desktop sidebar toggle */}
-          <h1 className="text-xl font-bold text-white">
-            Hyderabad Properties
-          </h1>
+          <Link to="/" className="flex items-center space-x-2">
+            <img
+              src="/RR_LOGO.svg"
+              alt="RR Properties"
+              className="h-9 w-auto object-contain"
+            />
+            <span className="text-white font-bold text-xl">RR Properties</span>
+          </Link>
 
           <button
             onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
@@ -140,16 +144,9 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
           <nav className="flex items-center space-x-2 text-sm">
             {breadcrumbs.map((crumb, index) => (
               <div key={crumb.path} className="flex items-center space-x-2">
-                {index === 0 && (
-                  <Home
-                    size={16}
-                    className="text-gray-400"
-                  />
-                )}
+                {index === 0 && <Home size={16} className="text-gray-400" />}
                 {index === breadcrumbs.length - 1 ? (
-                  <span className="text-white font-medium">
-                    {crumb.name}
-                  </span>
+                  <span className="text-white font-medium">{crumb.name}</span>
                 ) : (
                   <Link
                     to={crumb.path}
@@ -159,10 +156,7 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                   </Link>
                 )}
                 {index < breadcrumbs.length - 1 && (
-                  <ChevronRight
-                    size={16}
-                    className="text-gray-500"
-                  />
+                  <ChevronRight size={16} className="text-gray-500" />
                 )}
               </div>
             ))}
@@ -179,9 +173,7 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                 className="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
               >
                 <User size={20} className="text-gray-300" />
-                <span className="text-sm text-gray-300">
-                  {user.name}
-                </span>
+                <span className="text-sm text-gray-300">{user.name}</span>
               </button>
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
@@ -189,12 +181,16 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                     <p className="text-sm text-gray-300">{user.name}</p>
                     <p className="text-xs text-gray-400">{user.email}</p>
                     {user.role && (
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
-                        isSuperAdmin() ? 'bg-purple-600 text-white' :
-                        hasAdminAccess() ? 'bg-blue-600 text-white' :
-                        'bg-gray-600 text-gray-300'
-                      }`}>
-                        {user.role.replace('_', ' ').toUpperCase()}
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
+                          isSuperAdmin()
+                            ? "bg-purple-600 text-white"
+                            : hasAdminAccess()
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-600 text-gray-300"
+                        }`}
+                      >
+                        {user.role.replace("_", " ").toUpperCase()}
                       </span>
                     )}
                   </div>
@@ -219,8 +215,6 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
               Login
             </button>
           )}
-
-
         </div>
       </div>
     </>
