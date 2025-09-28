@@ -8,6 +8,7 @@ import {
   Heart,
 } from "lucide-react";
 import { useWishlist } from '../context/WishlistContext';
+import logo from '../assets/RR_PROP_LOGO.png'
 
 // ...rest of imports remain same
 
@@ -58,7 +59,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
       {/* Image Section */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={currentImage}
+          src={currentImage || logo}
           alt={property.title}
           className={`w-full h-full object-cover transition-transform duration-300 ${
             !isSold ? "hover:scale-105" : ""

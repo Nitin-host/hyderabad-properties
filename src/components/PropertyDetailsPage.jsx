@@ -4,7 +4,8 @@ import { propertiesAPI } from '../services/api';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useWishlist } from '../context/WishlistContext';
 import PropertyShare from './PropertyShare';
-import StickyContactForm from './ContactForm';
+import StickyWhatsApp from './StickyWhatsApp.jsx';
+import logo from '../assets/RR_PROP_LOGO.png'
 import { Play } from 'lucide-react';
 
 const PropertyDetailsPage = () => {
@@ -157,7 +158,7 @@ const PropertyDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <StickyContactForm />
+      <StickyWhatsApp />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Property Title and Price */}
         <div className="mb-8">
@@ -186,7 +187,7 @@ const PropertyDetailsPage = () => {
                   <img
                     src={
                       property.images[currentImageIndex]?.presignUrl?.trim() ||
-                      "/api/placeholder/800/400"
+                      logo
                     }
                     alt={
                       property.images[currentImageIndex]?.caption ||
@@ -288,12 +289,7 @@ const PropertyDetailsPage = () => {
 
                     {/* Image */}
                     <img
-                      src={
-                        property.images[
-                          modalImageIndex
-                        ]?.cloudinaryUrl?.trim() ||
-                        property.images[modalImageIndex]?.presignUrl?.trim()
-                      }
+                      src={property.images[modalImageIndex]?.presignUrl || logo }
                       alt="Expanded"
                       className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
                     />
@@ -337,7 +333,7 @@ const PropertyDetailsPage = () => {
                         }`}
                       >
                         <img
-                          src={image.presignUrl}
+                          src={image.presignUrl || logo}
                           alt={image.key || `Image ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
@@ -359,10 +355,7 @@ const PropertyDetailsPage = () => {
                       onClick={() => setIsVideoPlaying(true)}
                     >
                       <img
-                        src={
-                          property.videos[0]?.thumbnail ||
-                          "/api/placeholder/800/400"
-                        }
+                        src={property.videos[0]?.thumbnail || logo }
                         alt="Video Thumbnail"
                         className="w-full h-full object-cover"
                       />
@@ -372,7 +365,7 @@ const PropertyDetailsPage = () => {
                     </div>
                   ) : (
                     <video
-                      src={property.videos[0]?.presignUrl}
+                      src={property.videos[0]?.presignUrl || logo}
                       controls
                       autoPlay
                       controlsList="nodownload noplaybackrate"
@@ -521,7 +514,7 @@ const PropertyDetailsPage = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {activeTab === "details" && (
                   <div className="space-y-4">
                     {/* Basic Details */}

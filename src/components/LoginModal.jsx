@@ -7,25 +7,39 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-    otp: '',
+    name: "",
+    email: "",
+    password: "",
+    phone: "",
+    otp: "",
   });
-  const [step, setStep] = useState("login"); 
+  const [step, setStep] = useState("login");
   // steps: "login" | "otp" | "forgot" | "reset"
-  
+
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { login, register, verifyOtp, forgotPassword, resetPassword } = useAuth();
+  const { login, register, verifyOtp, forgotPassword, resetPassword } =
+    useAuth();
+
+  // At the top of your component
+  React.useEffect(() => {
+    if (!isOpen) {
+      // Reset modal state whenever it is closed
+      setStep("login");
+      setIsLogin(true);
+      setFormData({ name: "", email: "", password: "", phone: "", otp: "" });
+      setErrors({});
+      setShowSuccess(false);
+      setShowPassword(false);
+    }
+  }, [isOpen]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -44,22 +58,23 @@ const LoginModal = ({ isOpen, onClose }) => {
           setIsLoading(false);
           return;
         }
-      } 
-      else if (step === "otp") {
+      } else if (step === "otp") {
         result = await verifyOtp(formData.email, formData.otp);
-      } 
-      else if (step === "forgot") {
+      } else if (step === "forgot") {
         result = await forgotPassword(formData.email);
         if (result.success) {
           setStep("reset");
         }
-      } 
-      else if (step === "reset") {
+      } else if (step === "reset") {
         result = await resetPassword(formData.token, formData.password);
-      } 
-      else {
+      } else {
         if (!isLogin) {
-          result = await register(formData.name, formData.email, formData.password, formData.phone);
+          result = await register(
+            formData.name,
+            formData.email,
+            formData.password,
+            formData.phone
+          );
         }
       }
 
@@ -67,7 +82,13 @@ const LoginModal = ({ isOpen, onClose }) => {
         setShowSuccess(true);
         setErrors({});
         setTimeout(() => {
-          setFormData({ name: "", email: "", password: "", phone: "", otp: "" });
+          setFormData({
+            name: "",
+            email: "",
+            password: "",
+            phone: "",
+            otp: "",
+          });
           setShowSuccess(false);
           onClose();
         }, 1500);
@@ -96,7 +117,7 @@ const LoginModal = ({ isOpen, onClose }) => {
               : step === "reset"
               ? "Reset Password"
               : isLogin
-              ? "Welcome Back"
+              ? "Welcome to RR Properties"
               : "Create Account"}
           </h2>
           <button
@@ -116,7 +137,10 @@ const LoginModal = ({ isOpen, onClose }) => {
                 Enter OTP sent to your email
               </label>
               <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <KeyRound
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="text"
                   name="otp"
@@ -136,7 +160,10 @@ const LoginModal = ({ isOpen, onClose }) => {
                 Enter your email to reset password
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Mail
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="email"
                   name="email"
@@ -156,7 +183,10 @@ const LoginModal = ({ isOpen, onClose }) => {
                 Enter New Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Lock
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="password"
                   name="password"
@@ -178,7 +208,10 @@ const LoginModal = ({ isOpen, onClose }) => {
                     Full Name
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <User
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      size={20}
+                    />
                     <input
                       type="text"
                       name="name"
@@ -199,7 +232,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                   <PhoneInputDropdown
                     allowedCountries={["IN"]}
                     onChange={(data) =>
-                      setFormData(prev => ({ ...prev, phone: data.phone }))
+                      setFormData((prev) => ({ ...prev, phone: data.phone }))
                     }
                   />
                 </div>
@@ -210,7 +243,10 @@ const LoginModal = ({ isOpen, onClose }) => {
                   Email
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <Mail
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
                   <input
                     type="email"
                     name="email"
@@ -227,7 +263,10 @@ const LoginModal = ({ isOpen, onClose }) => {
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <Lock
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
@@ -276,11 +315,17 @@ const LoginModal = ({ isOpen, onClose }) => {
             disabled={isLoading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg"
           >
-            {isLoading ? "Please wait..." :
-              step === "otp" ? "Verify OTP" :
-              step === "forgot" ? "Send Reset Link" :
-              step === "reset" ? "Reset Password" :
-              isLogin ? "Sign In" : "Create Account"}
+            {isLoading
+              ? "Please wait..."
+              : step === "otp"
+              ? "Verify OTP"
+              : step === "forgot"
+              ? "Send Reset Link"
+              : step === "reset"
+              ? "Reset Password"
+              : isLogin
+              ? "Sign In"
+              : "Create Account"}
           </button>
         </form>
 
