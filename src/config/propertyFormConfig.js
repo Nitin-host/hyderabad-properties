@@ -585,9 +585,7 @@ export const formHelpers = {
 
   // Update amenities array based on checkbox changes
   updateAmenities: (formData, fieldName, checked) => {
-    console.log("Updating amenities:", fieldName, checked);
     const amenities = [...(formData.amenities || [])];
-    console.log("Current amenities before update:", amenities);
     if (checked && !amenities.includes(fieldName)) {
       amenities.push(fieldName);
     } else if (!checked && amenities.includes(fieldName)) {

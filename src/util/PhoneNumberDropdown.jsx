@@ -123,9 +123,44 @@ class PhoneInputDropdown extends Component {
     };
   }
 
+  componentDidMount() {
+    if (this.props.value) this.setPhoneFromValue(this.props.value);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.value !== this.props.value && this.props.value) {
+      this.setPhoneFromValue(this.props.value);
+    }
+  }
+
   getCountriesByCodes(codes = []) {
     if (!codes.length) return COUNTRIES;
     return COUNTRIES.filter((c) => codes.includes(c.code));
+  }
+
+  setPhoneFromValue(fullNumber) {
+    const { dial, digits } = this.splitDialAndDigits(fullNumber);
+    const country = this.state.countries.find((c) => c.dial === dial);
+    if (country) {
+      this.setState(
+        {
+          selectedCountry: country,
+          phone: formatLocalNumber(digits, country.code),
+          error: "",
+        },
+        this.triggerChange
+      );
+    } else {
+      this.setState({ phone: fullNumber, error: "" }, this.triggerChange);
+    }
+  }
+
+  splitDialAndDigits(fullNumber) {
+    for (const c of COUNTRIES) {
+      if (fullNumber.startsWith(c.dial))
+        return { dial: c.dial, digits: fullNumber.slice(c.dial.length) };
+    }
+    return { dial: "", digits: fullNumber };
   }
 
   validatePhone(digits, country) {
@@ -140,51 +175,40 @@ class PhoneInputDropdown extends Component {
       };
     }
     const strictRule = STRICT_RULES[country.code];
-    if (strictRule && !strictRule(digits)) {
+    if (strictRule && !strictRule(digits))
       return { isValid: false, error: "Invalid format for region" };
-    }
     return { isValid: true, error: "" };
   }
 
-  toggleDropdown = () => {
+  toggleDropdown = () =>
     this.setState({ showDropdown: !this.state.showDropdown });
-  };
 
-  handleCountrySelect = (country) => {
-    this.setState({
-      selectedCountry: country,
-      showDropdown: false,
-      phone: "",
-      error: "",
-    });
-  };
+  handleCountrySelect = (country) =>
+    this.setState(
+      { selectedCountry: country, showDropdown: false, phone: "", error: "" },
+      this.triggerChange
+    );
 
   handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, "");
     const { selectedCountry } = this.state;
-    if (selectedCountry.maxLength) {
+    if (selectedCountry.maxLength)
       value = value.slice(0, selectedCountry.maxLength);
-    }
     const { isValid, error } = this.validatePhone(value, selectedCountry);
     const formatted = formatLocalNumber(value, selectedCountry.code);
-    this.setState({ phone: formatted, error: isValid ? "" : error });
+    this.setState(
+      { phone: formatted, error: isValid ? "" : error },
+      this.triggerChange
+    );
   };
-
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.selectedCountry !== this.state.selectedCountry ||
-      prevState.phone !== this.state.phone ||
-      prevState.error !== this.state.error
-    ) {
-      this.triggerChange();
-    }
-  }
 
   triggerChange = () => {
     const { phone, selectedCountry, error } = this.state;
     if (this.props.onChange) {
       this.props.onChange({
-        phone: phone ? `${selectedCountry.dial}${phone}` : "",
+        phone: phone
+          ? `${selectedCountry.dial}${phone.replace(/\D/g, "")}`
+          : "",
         country: selectedCountry,
         error,
       });
@@ -198,9 +222,7 @@ class PhoneInputDropdown extends Component {
 
     return (
       <div className={`relative w-full ${className}`}>
-        {/* Input + Dropdown unified */}
         <div className="flex items-center border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-gray-100 focus-within:ring-2 focus-within:ring-indigo-500">
-          {/* Dropdown Button */}
           <div
             className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded-l-lg"
             onClick={this.toggleDropdown}
@@ -215,7 +237,6 @@ class PhoneInputDropdown extends Component {
             <span className="ml-0">▾</span>
           </div>
 
-          {/* Input (same styles, seamless merge) */}
           <input
             type="tel"
             className="w-full px-3 py-2 bg-gray-700 text-white focus:outline-none rounded-r-lg"
@@ -225,7 +246,6 @@ class PhoneInputDropdown extends Component {
           />
         </div>
 
-        {/* Dropdown */}
         {showDropdown && (
           <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-700 bg-gray-900 shadow-lg">
             {countries.map((c) => (
@@ -246,7 +266,6 @@ class PhoneInputDropdown extends Component {
           </ul>
         )}
 
-        {/* Error */}
         {error && <div className="mt-1 text-sm text-red-400">{error}</div>}
       </div>
     );

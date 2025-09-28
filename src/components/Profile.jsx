@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { authAPI } from "../services/api"; // adjust path
+import PhoneInputDropdown from "../util/PhoneNumberDropdown";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    avatar: null, // File object
   });
-  const [preview, setPreview] = useState(null); // For image preview
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -18,19 +17,12 @@ export default function Profile() {
     const fetchProfile = async () => {
       try {
         const res = await authAPI.getProfile();
-        const profile = res.data; // your API wraps in { success, data }
+        const profile = res.data;
         setUser(profile);
         setFormData({
           name: profile.name,
           phone: profile.phone || "",
-          avatar: null,
         });
-        // Existing avatar
-        setPreview(
-          profile.avatar
-            ? `http://localhost:5000/uploads/${profile.avatar}`
-            : null
-        );
       } catch (err) {
         console.error("Error fetching profile:", err.message);
       } finally {
@@ -45,44 +37,20 @@ export default function Profile() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle avatar change
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData({ ...formData, avatar: file }); // File to upload
-      setPreview(URL.createObjectURL(file)); // Live preview
-    }
-  };
-
   // Submit updated profile
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
 
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("phone", formData.phone);
-    if (formData.avatar) {
-      data.append("avatar", formData.avatar); // send actual file
-    }
-
     try {
-      const updated = await authAPI.updateProfile(data);
+      const updated = await authAPI.updateProfile(formData);
       const updatedData = updated.data || updated;
 
       setUser(updatedData);
       setFormData({
         name: updatedData.name,
         phone: updatedData.phone || "",
-        avatar: null,
       });
-
-      // Update preview to final saved URL
-      setPreview(
-        updatedData.avatar
-          ? `http://localhost:5000/uploads/${updatedData.avatar}`
-          : null
-      );
 
       setEditMode(false);
     } catch (err) {
@@ -95,28 +63,16 @@ export default function Profile() {
   if (loading)
     return <p className="text-gray-300 text-center mt-10">Loading...</p>;
 
+  // Get first letter of name for avatar
+  const avatarLetter = user?.name?.charAt(0).toUpperCase() || "?";
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-lg bg-gray-800 rounded-2xl shadow-lg p-8">
         <div className="flex flex-col items-center">
-          {/* Avatar */}
-          <div className="relative">
-            <img
-              src={preview || "/default-avatar.jpg"}
-              alt="Avatar"
-              className="w-28 h-28 rounded-full object-cover border-2 border-gray-600"
-            />
-            {editMode && (
-              <label className="absolute bottom-0 right-0 bg-indigo-600 p-2 rounded-full cursor-pointer hover:bg-indigo-700">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-                <span className="text-xs">📷</span>
-              </label>
-            )}
+          {/* Avatar with first letter */}
+          <div className="w-28 h-28 rounded-full bg-indigo-600 flex items-center justify-center text-4xl font-bold text-white border-2 border-gray-600">
+            {avatarLetter}
           </div>
 
           <h2 className="text-2xl font-bold mt-4">{user.name}</h2>
@@ -145,12 +101,12 @@ export default function Profile() {
               {/* Phone */}
               <div>
                 <label className="block text-sm font-medium mb-1">Phone</label>
-                <input
-                  type="text"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                <PhoneInputDropdown
+                  allowedCountries={["IN"]}
+                  value={user.phone}
+                  onChange={(data) =>
+                    setFormData((prev) => ({ ...prev, phone: data.phone }))
+                  }
                 />
               </div>
 
@@ -162,13 +118,7 @@ export default function Profile() {
                     setFormData({
                       name: user.name,
                       phone: user.phone || "",
-                      avatar: null,
                     });
-                    setPreview(
-                      user.avatar
-                        ? `http://localhost:5000/uploads/${user.avatar}`
-                        : null
-                    );
                   }}
                   className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700"
                 >

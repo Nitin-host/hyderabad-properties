@@ -419,78 +419,109 @@ const PropertyDetailsPage = () => {
                 {activeTab === "overview" && (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-xs text-gray-400">Property Type</p>
-                        <p className="font-medium text-sm">
-                          {property.propertyType}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Total Floors</p>
-                        <p className="font-medium text-sm">
-                          {property.totalFloors || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Status</p>
-                        <p className="font-medium text-sm">{property.status}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Availability</p>
-                        <p className="font-medium text-sm">
-                          {property.availabilityDate
-                            ? new Date(
-                                property.availabilityDate
-                              ).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "long",
-                                year: "numeric",
-                              })
-                            : property.availability || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Size</p>
-                        <p className="font-medium text-sm">
-                          {property.size} {property.sizeUnit}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">
-                          Furnished Status
-                        </p>
-                        <p className="font-medium text-sm">
-                          {property.furnished}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Bedrooms</p>
-                        <p className="font-medium text-sm">
-                          {property.bedrooms}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Bathrooms</p>
-                        <p className="font-medium text-sm">
-                          {property.bathrooms}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Balconies</p>
-                        <p className="font-medium text-sm">
-                          {property.balconies > 0 ? property.balconies : "None"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Maintenance</p>
-                        <p className="font-medium text-sm">
-                          ₹{property.maintenance}
-                        </p>
-                      </div>
+                      {property.propertyType && (
+                        <div>
+                          <p className="text-xs text-gray-400">Property Type</p>
+                          <p className="font-medium text-sm">
+                            {property.propertyType}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.totalFloors && (
+                        <div>
+                          <p className="text-xs text-gray-400">Total Floors</p>
+                          <p className="font-medium text-sm">
+                            {property.totalFloors}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.status && (
+                        <div>
+                          <p className="text-xs text-gray-400">Status</p>
+                          <p className="font-medium text-sm">
+                            {property.status}
+                          </p>
+                        </div>
+                      )}
+
+                      {(property.availabilityDate || property.availability) && (
+                        <div>
+                          <p className="text-xs text-gray-400">Availability</p>
+                          <p className="font-medium text-sm">
+                            {property.availabilityDate
+                              ? new Date(
+                                  property.availabilityDate
+                                ).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "long",
+                                  year: "numeric",
+                                })
+                              : property.availability}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.size && property.sizeUnit && (
+                        <div>
+                          <p className="text-xs text-gray-400">Size</p>
+                          <p className="font-medium text-sm">
+                            {property.size} {property.sizeUnit}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.furnished && (
+                        <div>
+                          <p className="text-xs text-gray-400">
+                            Furnished Status
+                          </p>
+                          <p className="font-medium text-sm">
+                            {property.furnished}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.bedrooms && (
+                        <div>
+                          <p className="text-xs text-gray-400">Bedrooms</p>
+                          <p className="font-medium text-sm">
+                            {property.bedrooms}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.bathrooms && (
+                        <div>
+                          <p className="text-xs text-gray-400">Bathrooms</p>
+                          <p className="font-medium text-sm">
+                            {property.bathrooms}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.balconies > 0 && (
+                        <div>
+                          <p className="text-xs text-gray-400">Balconies</p>
+                          <p className="font-medium text-sm">
+                            {property.balconies}
+                          </p>
+                        </div>
+                      )}
+
+                      {property.maintenance && (
+                        <div>
+                          <p className="text-xs text-gray-400">Maintenance</p>
+                          <p className="font-medium text-sm">
+                            ₹{property.maintenance}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
-
+                
                 {activeTab === "details" && (
                   <div className="space-y-4">
                     {/* Basic Details */}

@@ -94,7 +94,7 @@ const UserManagement = () => {
         <TableUtil
           tableName="Users"
           tableData={users}
-          searchKeys={['name']}
+          searchKeys={["name"]}
           createBtn={[
             {
               label: "Add User",
@@ -113,8 +113,7 @@ const UserManagement = () => {
           tableActions={[
             {
               btnTitle: "",
-              btnClass:
-                "bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md",
+              btnClass: "text-red-500 hover:text-red-400",
               iconComponent: Trash2,
               btnAction: (user) => setSelectedUser(user),
               isVisible: (user) => user.role !== "super_admin",
