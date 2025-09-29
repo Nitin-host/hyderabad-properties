@@ -4,7 +4,7 @@ import Whatsapp from "../assets/whatsapp.svg"
 
 
 const StickyWhatsApp = () => {
-  const phoneNumber = "919703319865"; // Replace with your WhatsApp number
+  const phoneNumber = "919959120077"; // Replace with your WhatsApp number
   const message = "Hi there! I have a query."; // Default message
 
   // Encode message for URL

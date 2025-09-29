@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { authAPI, propertiesAPI } from "../services/api";
 import PropertyCard from "./PropertyCard";
+import { Heart } from "lucide-react"; // ✅ nice icon
+import { Link } from "react-router-dom";
 
 export default function Wishlist() {
   const [wishlist, setWishlist] = useState([]);
@@ -51,12 +53,9 @@ export default function Wishlist() {
     if (isLoggedIn) {
       setWishlist((prev) => prev.filter((item) => item._id !== propertyId));
     } else {
-      // Update localStorage IDs
       const stored = JSON.parse(localStorage.getItem("favorites")) || [];
       const updated = stored.filter((item) => item._id !== propertyId);
       localStorage.setItem("favorites", JSON.stringify(updated));
-
-      // Update local state
       setWishlist((prev) => prev.filter((item) => item._id !== propertyId));
     }
   };
@@ -66,7 +65,22 @@ export default function Wishlist() {
       <h2 className="text-2xl font-bold mb-6">My Wishlist</h2>
 
       {wishlist.length === 0 ? (
-        <p className="text-gray-500">No properties in wishlist</p>
+        <div className="flex flex-col items-center justify-center text-center mt-20">
+          <Heart className="w-16 h-16 text-gray-400 mb-4" />
+          <h3 className="text-xl font-semibold mb-2 text-gray-200">
+            Your wishlist is empty
+          </h3>
+          <p className="text-gray-400 mb-6 max-w-sm">
+            Save your favorite properties here. Start exploring and add some to
+            your wishlist!
+          </p>
+          <Link
+            to="/"
+            className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition"
+          >
+            Browse Properties
+          </Link>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {wishlist.map((property) => (
