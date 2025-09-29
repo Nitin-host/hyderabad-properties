@@ -51,7 +51,9 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
               alt="RR Properties"
               className="h-10 w-auto object-contain"
             />
-            <span className="text-white font-bold text-xl">RR Properties</span>
+            <span className="font-bold text-xl text-[#E8A667]">
+              RR Properties
+            </span>
           </Link>
           {/* Mobile actions */}
           <div className="flex items-center space-x-2">
@@ -129,7 +131,9 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
               alt="RR Properties"
               className="h-9 w-auto object-contain"
             />
-            <span className="text-white font-bold text-xl">RR Properties</span>
+            <span className="text-[#E8A667] font-bold text-xl tracking-widest">
+              RR PROPERTIES
+            </span>
           </Link>
 
           <button

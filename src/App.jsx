@@ -13,6 +13,7 @@ import Profile from "./components/Profile";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ContactPage from "./components/ContactForm";
+import ScrollToTop from "./util/ScrollToTop";
 
 function App() {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true);
@@ -23,6 +24,7 @@ function App() {
     <AuthProvider>
       <WishlistProvider>
         <Router>
+          <ScrollToTop />
           <div className="flex flex-col min-h-screen bg-gray-900 text-gray-100">
             {/* Navbar */}
             <NavBar
