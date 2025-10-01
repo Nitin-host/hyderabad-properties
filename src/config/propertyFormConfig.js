@@ -165,10 +165,10 @@ export const propertyFormConfig = {
           type: "select",
           label: "Parking Available",
           options: [
-            { value: "Bike", label: "Bike" },
-            { value: "Car", label: "Car" },
-            { value: "Car & Bike", label: "Car & Bike" },
-            { value: "None", label: "None" },
+            { value: "bike", label: "Bike" },
+            { value: "car", label: "Car" },
+            { value: "car & bike", label: "Car & Bike" },
+            { value: "none", label: "None" },
           ],
         },
         {
