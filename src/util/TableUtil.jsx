@@ -29,36 +29,39 @@ function TableUtil({
     );
   }, [filters]);
 
-  useEffect(() => {
-    const onResize = () => setMobileView(isMobile());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [enableMobileView]);
+ useEffect(() => {
+   const onResize = () => setMobileView(enableMobileView && isMobile());
+   window.addEventListener("resize", onResize);
 
- const getNestedValue = (obj, path) => {
-   if (!obj || !path) return undefined;
-   return path
-     .replace(/\[(\d+)\]/g, ".$1") // convert [0] to .0
-     .split(".")
-     .reduce((o, k) => (o ? o[k] : undefined), obj);
- };
+   // Also update mobileView immediately if enableMobileView changes
+   setMobileView(enableMobileView && isMobile());
 
+   return () => window.removeEventListener("resize", onResize);
+ }, [enableMobileView]);
+
+
+  const getNestedValue = (obj, path) => {
+    if (!obj || !path) return undefined;
+    return path
+      .replace(/\[(\d+)\]/g, ".$1")
+      .split(".")
+      .reduce((o, k) => (o ? o[k] : undefined), obj);
+  };
 
   const filteredData = useMemo(() => {
     let filtered = [...tableData];
 
-    // search
     if (searchText && searchKeys.length > 0) {
-      const s = searchText.toLowerCase();
+      const s = searchText.toLowerCase().trim(); // trim spaces
       filtered = filtered.filter((item) =>
         searchKeys.some((key) => {
           const val = getNestedValue(item, key);
-          return val && val.toString().toLowerCase().includes(s);
+          return val && val.toString().toLowerCase().trim().includes(s); // trim item value too
         })
       );
     }
 
-    // filters
+
     Object.entries(filterVals).forEach(([key, values]) => {
       if (values?.length > 0) {
         filtered = filtered.filter((item) =>
@@ -67,7 +70,6 @@ function TableUtil({
       }
     });
 
-    // sort
     const { index, asc } = sortConfig;
     const sortKey = tableHeader[index]?.key;
     if (sortKey) {
@@ -79,7 +81,6 @@ function TableUtil({
       });
     }
 
-    // super_admin first if role exists
     filtered.sort((a, b) => {
       if (a.role === "super_admin") return -1;
       if (b.role === "super_admin") return 1;
@@ -106,11 +107,10 @@ function TableUtil({
 
   const MobileCard = ({ row }) => {
     return (
-      <div className="mb-3 p-4 border-l-4 border-green-500 bg-gray-900 text-white rounded-lg shadow-sm">
+      <div className="mb-3 p-4 border-l-4 border-primary bg-card text-card-foreground dark:bg-card-dark dark:text-card-foreground-dark rounded-lg shadow-sm">
         {tableHeader.map((colDef, idx) => {
           const val = getNestedValue(row, colDef.key);
 
-          // Image + text column
           if (colDef.imageKey || colDef.textKey) {
             const imageUrl = getNestedValue(row, colDef.imageKey);
             const text = getNestedValue(row, colDef.textKey);
@@ -121,7 +121,7 @@ function TableUtil({
                   className="flex items-center gap-2 truncate flex-1"
                   title={text}
                 >
-                  <div className="h-10 w-10 flex-shrink-0 rounded bg-gray-700">
+                  <div className="h-10 w-10 flex-shrink-0 rounded bg-muted dark:bg-muted-dark">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -129,7 +129,7 @@ function TableUtil({
                         className="h-10 w-10 object-cover rounded"
                       />
                     ) : (
-                      <User className="w-10 h-10 text-gray-400 p-1" />
+                      <User className="w-10 h-10 text-muted-foreground dark:text-muted-foreground-dark p-1" />
                     )}
                   </div>
                   <span className="text-sm font-medium truncate">{text}</span>
@@ -138,7 +138,6 @@ function TableUtil({
             );
           }
 
-          // Other fields with tooltip if truncated
           let displayVal = val;
           if (val === undefined || val === null) displayVal = "";
           if (colDef.dataFormat === "currency")
@@ -151,7 +150,7 @@ function TableUtil({
             <div key={idx} className="flex justify-between mb-1 flex-wrap">
               <strong className="min-w-[90px]">{colDef.label}:</strong>
               <span
-                className="text-sm text-gray-300 truncate flex-1"
+                className="text-sm text-muted-foreground dark:text-muted-foreground-dark truncate flex-1"
                 title={displayVal}
               >
                 {displayVal}
@@ -160,7 +159,6 @@ function TableUtil({
           );
         })}
 
-        {/* Actions */}
         {tableActions.length > 0 && (
           <div className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
             {tableActions.map((action, idx) => {
@@ -176,15 +174,15 @@ function TableUtil({
               if (typeof isVisible === "function" && !isVisible(row))
                 return null;
               if (typeof isVisible === "boolean" && !isVisible) return null;
-
               if (typeof customRender === "function")
                 return <span key={idx}>{customRender(row)}</span>;
-              
+
               return (
                 <button
                   key={idx}
                   className={`${
-                    btnClass || "text-blue-500 hover:text-blue-400"
+                    btnClass ||
+                    "text-primary hover:text-primary/80 dark:text-primary-dark dark:hover:text-primary-dark/80"
                   } flex items-center`}
                   onClick={() => btnAction(row)}
                   title={btnTitle}
@@ -203,21 +201,18 @@ function TableUtil({
     const val = getNestedValue(row, colDef.key);
 
     if (colDef?.render) return colDef.render(val, row);
-
     if (val === undefined || val === null) return "";
-
     if (Array.isArray(val)) {
       const unique = [...new Set(val.flat(Infinity).map(String))];
       return unique.join(", ") || "-";
     }
 
-    // Image + text column
     if (colDef.imageKey || colDef.textKey) {
       const imageUrl = getNestedValue(row, colDef.imageKey);
       const text = getNestedValue(row, colDef.textKey);
       return (
         <div className="flex items-center">
-          <div className="h-10 w-10 flex-shrink-0 rounded bg-gray-700 mr-4">
+          <div className="h-10 w-10 flex-shrink-0 rounded bg-muted dark:bg-muted-dark mr-4">
             {imageUrl ? (
               <img
                 src={imageUrl}
@@ -225,17 +220,19 @@ function TableUtil({
                 className="h-10 w-10 object-cover rounded"
               />
             ) : (
-              <User className="w-10 h-10 text-gray-400 p-1" />
+              <User className="w-10 h-10 text-muted-foreground dark:text-muted-foreground-dark p-1" />
             )}
           </div>
-          <div className="text-sm font-medium text-white truncate" title={text}>
+          <div
+            className="text-sm font-medium text-foreground dark:text-foreground-dark truncate"
+            title={text}
+          >
             {text}
           </div>
         </div>
       );
     }
 
-    // Other formats
     let displayVal;
     switch (colDef.dataFormat) {
       case "currency":
@@ -252,7 +249,10 @@ function TableUtil({
     }
 
     return (
-      <span className="text-sm text-gray-300 truncate" title={displayVal}>
+      <span
+        className="text-sm text-muted-foreground dark:text-muted-foreground-dark truncate"
+        title={displayVal}
+      >
         {displayVal}
       </span>
     );
@@ -262,10 +262,10 @@ function TableUtil({
     <div>
       {/* Header + Search + Create */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 p-3">
-        {/* Table Title */}
-        <h5 className="text-lg font-bold">{tableName}</h5>
+        <h5 className="text-lg font-bold text-foreground dark:text-foreground-dark">
+          {tableName}
+        </h5>
 
-        {/* Search + Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
           {searchKeys.length > 0 && (
             <input
@@ -276,7 +276,7 @@ function TableUtil({
                 setSearchText(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-3 py-2 rounded border border-gray-500 bg-gray-700 text-white placeholder-gray-400 w-full sm:w-64"
+              className="px-3 py-2 rounded border border-border bg-muted text-foreground placeholder-muted-foreground dark:bg-muted-dark dark:text-foreground-dark dark:placeholder-muted-foreground-dark w-full sm:w-64"
             />
           )}
 
@@ -286,7 +286,8 @@ function TableUtil({
                 key={idx}
                 onClick={btn.onClick}
                 className={`px-4 py-2 rounded text-white text-sm ${
-                  btn.btnClass || "bg-green-600 hover:bg-green-700"
+                  btn.btnClass ||
+                  "bg-primary hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
                 } flex items-center justify-center gap-1`}
                 title={btn.title}
               >
@@ -306,13 +307,13 @@ function TableUtil({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700">
+          <table className="min-w-full divide-y divide-border dark:divide-border-dark">
             <thead>
               <tr>
                 {tableHeader.map((colDef, idx) => (
                   <th
                     key={idx}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none"
+                    className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground-dark uppercase tracking-wider cursor-pointer select-none"
                     onClick={() => handleSort(idx)}
                   >
                     {colDef.label}{" "}
@@ -325,25 +326,28 @@ function TableUtil({
                   </th>
                 ))}
                 {tableActions.length > 0 && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground-dark uppercase tracking-wider">
                     Actions
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-border dark:divide-border-dark">
               {pagedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={tableHeader.length + tableActions.length}
-                    className="px-6 py-4 text-center text-gray-400"
+                    className="px-6 py-4 text-center text-muted-foreground dark:text-muted-foreground-dark"
                   >
                     No data found
                   </td>
                 </tr>
               ) : (
                 pagedData.map((row) => (
-                  <tr key={row._id || row.id} className="hover:bg-gray-800/50">
+                  <tr
+                    key={row._id || row.id}
+                    className="hover:bg-muted/50 dark:hover:bg-muted-dark/50"
+                  >
                     {tableHeader.map((colDef, idx) => (
                       <td key={idx} className="px-6 py-4 whitespace-nowrap">
                         {renderCell(row, colDef)}
@@ -361,7 +365,6 @@ function TableUtil({
                             isVisible,
                           } = action;
 
-                          // 🔹 check visibility
                           if (
                             typeof isVisible === "function" &&
                             !isVisible(row)
@@ -377,7 +380,8 @@ function TableUtil({
                             <button
                               key={idx}
                               className={`${
-                                btnClass || "text-blue-500 hover:text-blue-400"
+                                btnClass ||
+                                "text-primary hover:text-primary/80 dark:text-primary-dark dark:hover:text-primary-dark/80"
                               } flex items-center`}
                               onClick={() => btnAction(row)}
                               title={btnTitle}
@@ -399,17 +403,16 @@ function TableUtil({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center gap-3 my-3 flex-wrap">
-          {/* Pagination Buttons */}
           <div className="flex items-center gap-1 flex-wrap">
             <button
-              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
             >
               First
             </button>
             <button
-              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
             >
@@ -420,8 +423,8 @@ function TableUtil({
                 key={idx}
                 className={`px-3 py-1 rounded ${
                   currentPage === idx + 1
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-700 text-white hover:bg-gray-600"
+                    ? "bg-primary text-white dark:bg-primary-dark"
+                    : "bg-muted text-foreground dark:bg-muted-dark dark:text-foreground-dark hover:bg-muted/80 dark:hover:bg-muted-dark/80"
                 }`}
                 onClick={() => setCurrentPage(idx + 1)}
               >
@@ -429,14 +432,14 @@ function TableUtil({
               </button>
             ))}
             <button
-              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
             >
               Next
             </button>
             <button
-              className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
             >
@@ -444,7 +447,6 @@ function TableUtil({
             </button>
           </div>
 
-          {/* Rows Per Page Selector */}
           <div className="flex items-center gap-2 mt-2 sm:mt-0">
             <select
               value={rowsPerPage}
@@ -452,7 +454,7 @@ function TableUtil({
                 setRowsPerPage(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="px-2 py-1 rounded bg-gray-700 text-white border border-gray-500"
+              className="px-2 py-1 rounded bg-muted text-foreground border border-border dark:bg-muted-dark dark:text-foreground-dark dark:border-border-dark"
             >
               {[5, 10, 25, 50, 100].map((num) => (
                 <option key={num} value={num}>

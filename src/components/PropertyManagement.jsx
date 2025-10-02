@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Upload, Trash2, Plus, Edit } from "lucide-react";
+import { X, Upload, Trash2, Plus, Edit, RotateCcw, Eye } from "lucide-react";
 import { propertiesAPI } from "../services/api";
 import DynamicForm from "./DynamicForm";
 import { formHelpers } from "../config/propertyFormConfig";
@@ -27,8 +27,10 @@ const PropertyManagement = ({
   const [properties, setProperties] = useState(propProperties || []);
   const [loading, setLoading] = useState(!propProperties);
   const [error, setError] = useState(null);
+  const [deletedProperties, setDeletedProperties] = useState([]); // ✅ NEW
+  const [showDeleted, setShowDeleted] = useState(false); // ✅ NEW
+  const [viewingProperty, setViewingProperty] = useState(null);
   const location = useLocation();
-
 
   // Fetch properties if not provided as props
   useEffect(() => {
@@ -110,23 +112,22 @@ const PropertyManagement = ({
         formDataObj.append("removedVideos", JSON.stringify(removedVideos));
 
       // Replace media
-     if (Object.keys(replaceMap).length > 0) {
-       const mapPayload = {};
+      if (Object.keys(replaceMap).length > 0) {
+        const mapPayload = {};
 
-       Object.entries(replaceMap).forEach(([oldKey, file]) => {
-         // Instead of replaceMapFiles → send them into images/videos depending on type
-         if (file.type.startsWith("image/")) {
-           formDataObj.append("images", file);
-         } else if (file.type.startsWith("video/")) {
-           formDataObj.append("videos", file);
-         }
+        Object.entries(replaceMap).forEach(([oldKey, file]) => {
+          // Instead of replaceMapFiles → send them into images/videos depending on type
+          if (file.type.startsWith("image/")) {
+            formDataObj.append("images", file);
+          } else if (file.type.startsWith("video/")) {
+            formDataObj.append("videos", file);
+          }
 
-         mapPayload[oldKey] = file.name;
-       });
+          mapPayload[oldKey] = file.name;
+        });
 
-       formDataObj.append("replaceMap", JSON.stringify(mapPayload));
-     }
-
+        formDataObj.append("replaceMap", JSON.stringify(mapPayload));
+      }
 
       // New uploads
       images.forEach((img) => formDataObj.append("images", img));
@@ -149,7 +150,7 @@ const PropertyManagement = ({
     try {
       const response = await propertiesAPI.deleteProperty(id);
       if (response.success) {
-          if (refreshProperties) await refreshProperties();
+        if (refreshProperties) await refreshProperties();
         return { success: true };
       }
       return {
@@ -162,6 +163,22 @@ const PropertyManagement = ({
         success: false,
         error: err.message || "An error occurred while deleting property",
       };
+    }
+  };
+
+  // Fetch deleted properties
+  const fetchDeletedProperties = async () => {
+    setLoading(true);
+    try {
+      const response = await propertiesAPI.getDeleted();
+      const data = response.data || [];
+      setDeletedProperties(data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load deleted properties. Please try again.");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -333,6 +350,7 @@ const PropertyManagement = ({
     setEditingProperty(property);
     setShowForm(true);
   };
+
   const handleDelete = async (propertyId) => {
     if (window.confirm("Are you sure you want to delete this property?")) {
       try {
@@ -343,6 +361,38 @@ const PropertyManagement = ({
       }
     }
   };
+
+  const PermanentlyDelete = async (id) => {
+    if (window.confirm("Are you sure you want to permanently delete this property?")) {
+      try {
+        const result = await propertiesAPI.permanentlyDeleteProperty(id);
+          await fetchDeletedProperties(); // refresh deleted list
+        if (!result.success) throw new Error(result.error);
+      } catch (error) {
+        alert(error.message || "Failed to permanently delete property");
+      }
+    }
+  };
+
+ const handleRestoreProperty = async (id) => {
+   try {
+     const response = await propertiesAPI.restoreProperty(id);
+     if (response.success) {
+       await fetchDeletedProperties();
+       await fetchProperties(); // keep active list updated
+       if (refreshProperties) await refreshProperties();
+       return { success: true };
+     }
+     return { success: false, error: response.message };
+   } catch (err) {
+     console.error(err);
+     return { success: false, error: err.message };
+   }
+ }; 
+
+const handleView = (property) => {
+  setViewingProperty(property);
+};
 
   const tableHeader = [
     {
@@ -357,7 +407,7 @@ const PropertyManagement = ({
     { label: "Status", key: "status" },
   ];
 
-  const enableMobileView = location.pathname !=="/";
+  const enableMobileView = location.pathname !== "/";
 
 
   return (
@@ -365,131 +415,112 @@ const PropertyManagement = ({
       {loading ? (
         <div className="text-center py-10">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-400">Loading properties...</p>
+          <p className="mt-2 text-gray-500 dark:text-gray-400">
+            Loading properties...
+          </p>
         </div>
       ) : error ? (
-        <div className="bg-red-900/20 border border-red-900/50 text-red-200 p-4 rounded-lg">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-200 p-4 rounded-lg">
           {error}
           <button
             onClick={fetchProperties}
-            className="ml-4 underline hover:text-white"
+            className="ml-4 underline hover:text-blue-500 dark:hover:text-blue-400"
           >
             Try Again
           </button>
         </div>
-      ) : properties.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-gray-700 rounded-lg">
-          <p className="text-gray-400">No properties found</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="mt-2 text-blue-500 hover:text-blue-400"
-          >
-            Add your first property
-          </button>
+      ) : (showDeleted ? deletedProperties : properties).length === 0 ? (
+        <div className="text-center py-10 border border-dashed border-gray-400 dark:border-gray-700 rounded-lg">
+          <p className="text-gray-500 dark:text-gray-400">
+            {showDeleted ? "No deleted properties" : "No properties found"}
+          </p>
+          {showDeleted ? (
+            <button
+              onClick={() => {
+                setShowDeleted(false);
+                fetchProperties();
+              }}
+              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Back to Properties
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowForm(true)}
+              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Add your first property
+            </button>
+          )}
         </div>
       ) : (
         <TableUtil
-          tableData={properties}
+          tableData={showDeleted ? deletedProperties : properties}
           tableHeader={tableHeader}
-          tableName="Property Management"
+          tableName={showDeleted ? "Deleted Properties" : "Property Management"}
           searchKeys={["title"]}
           createBtn={[
             {
-              label: "Add Property",
-              icon: Plus,
-              onClick: () => setShowForm(true),
+              label: showDeleted ? "Back to Properties" : "Add Property",
+              icon: showDeleted ? RotateCcw : Plus,
+              onClick: () =>
+                showDeleted
+                  ? (setShowDeleted(false), fetchProperties())
+                  : setShowForm(true),
               btnClass:
                 "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
             },
+            {
+              label: "Deleted Properties",
+              icon: Trash2,
+              onClick: () => {
+                setShowDeleted(true);
+                fetchDeletedProperties(); // 🔥 load deleted from API
+              },
+              btnClass:
+                "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
+            },
           ]}
           enableMobileView={enableMobileView}
-          tableActions={[
-            {
-              btnTitle: "",
-              btnClass: "",
-              iconComponent: Edit,
-              btnAction: (property) => handleEdit(property),
-            },
-            {
-              btnTitle: "",
-              btnClass: "text-red-500 hover:text-red-400",
-              iconComponent: Trash2,
-              btnAction: (property) => handleDelete(property._id),
-            },
-          ]}
+          tableActions={
+            showDeleted
+              ? [
+                  {
+                    btnTitle: "Restore",
+                    btnClass: "text-green-600 hover:text-green-500",
+                    iconComponent: RotateCcw,
+                    btnAction: (property) =>
+                      handleRestoreProperty(property._id),
+                  },
+                  {
+                    btnTitle: "Delete Permanently",
+                    btnClass: "text-red-600 hover:text-red-500",
+                    iconComponent: Trash2,
+                    btnAction: (property) => PermanentlyDelete(property._id),
+                  },
+                  {
+                    btnTitle: "View",
+                    btnClass: "text-blue-600 hover:text-blue-500",
+                    iconComponent: Eye,
+                    btnAction: (property) => handleView(property),
+                  },
+                ]
+              : [
+                  {
+                    btnTitle: "",
+                    btnClass: "",
+                    iconComponent: Edit,
+                    btnAction: (property) => handleEdit(property),
+                  },
+                  {
+                    btnTitle: "",
+                    btnClass: "text-red-500 hover:text-red-400",
+                    iconComponent: Trash2,
+                    btnAction: (property) => handleDelete(property._id),
+                  },
+                ]
+          }
         />
-        // <div className="overflow-x-auto">
-        // <table className="min-w-full divide-y divide-gray-700">
-        //   <thead>
-        //     <tr>
-        //       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-        //         Property
-        //       </th>
-        //       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-        //         Location
-        //       </th>
-        //       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-        //         Price
-        //       </th>
-        //       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-        //         Type
-        //       </th>
-        //       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-        //         Status
-        //       </th>
-        //       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-        //         Actions
-        //       </th>
-        //     </tr>
-        //   </thead>
-        //   <tbody className="divide-y divide-gray-700">
-        //     {properties.map((property) => (
-        //       <tr key={property._id} className="hover:bg-gray-800/50">
-        //         <td className="px-6 py-4 whitespace-nowrap">
-        //           <div className="flex items-center">
-        //             <div className="h-10 w-10 flex-shrink-0 rounded bg-gray-700 mr-4">
-        //               {property.images && property.images[0]?.presignUrl && (
-        //                 <img
-        //                   src={property.images[0].presignUrl}
-        //                   alt={property.title}
-        //                   className="h-10 w-10 object-cover rounded"
-        //                 />
-        //               )}
-        //             </div>
-        //             <div className="text-sm font-medium text-white">
-        //               {property.title}
-        //             </div>
-        //           </div>
-        //         </td>
-        //         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-        //           {property.location}
-        //         </td>
-        //         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-        //           ₹{property.price.toLocaleString()}
-        //         </td>
-        //         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-        //           {property.propertyType}
-        //         </td>
-        //         <td className="px-6 py-4 whitespace-nowrap text-sm">{property.status}</td>
-        //         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        //           <button
-        //             onClick={() => handleEdit(property)}
-        //             className="text-blue-500 hover:text-blue-400 mr-4"
-        //           >
-        //             <Edit size={16} />
-        //           </button>
-        //           <button
-        //             onClick={() => handleDelete(property._id)}
-        //             className="text-red-500 hover:text-red-400"
-        //           >
-        //             <Trash2 size={16} />
-        //           </button>
-        //         </td>
-        //       </tr>
-        //     ))}
-        //   </tbody>
-        // </table>
-        // </div>
       )}
 
       {/* Form Modal */}
@@ -715,6 +746,116 @@ const PropertyManagement = ({
                 <p className="text-red-500 mt-2">{errors.submit}</p>
               )}
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewingProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 backdrop-blur-lg rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto border border-gray-700 animate-scaleUp">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+              <h3 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+                Property Details
+              </h3>
+              <button
+                onClick={() => setViewingProperty(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={28} />
+              </button>
+            </div>
+
+            {/* Property Info */}
+            <div className="space-y-4 text-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <p>
+                  <strong>Title:</strong> {viewingProperty.title}
+                </p>
+                <p>
+                  <strong>Location:</strong> {viewingProperty.location}
+                </p>
+                <p>
+                  <strong>Price:</strong> ₹
+                  {viewingProperty.price?.toLocaleString()}
+                </p>
+                <p>
+                  <strong>Type:</strong> {viewingProperty.propertyType}
+                </p>
+                <p>
+                  <strong>Status:</strong> {viewingProperty.status}
+                </p>
+              </div>
+
+              {viewingProperty.amenities &&
+                viewingProperty.amenities.length > 0 && (
+                  <p>
+                    <strong>Amenities:</strong>{" "}
+                    {viewingProperty.amenities.join(", ")}
+                  </p>
+                )}
+
+              <p className="whitespace-pre-line">
+                <strong>Description:</strong> {viewingProperty.description}
+              </p>
+
+              {/* Images */}
+              {viewingProperty.images && viewingProperty.images.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="font-semibold text-lg mb-2 text-purple-400">
+                    Images
+                  </h5>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {viewingProperty.images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300"
+                      >
+                        <img
+                          src={img.presignUrl || img.preview}
+                          alt={img.title || "Property Image"}
+                          className="w-full h-32 md:h-40 object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Videos */}
+              {viewingProperty.videos && viewingProperty.videos.length > 0 && (
+                <div className="mt-6">
+                  <h5 className="font-semibold text-lg mb-2 text-pink-400">
+                    Videos
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingProperty.videos.map((vid, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300"
+                      >
+                        <video
+                          src={vid.presignUrl || vid.preview}
+                          controls
+                          className="w-full h-36 md:h-48 object-cover rounded-lg"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-6 border-t border-gray-700 mt-6">
+              <button
+                onClick={() => setViewingProperty(null)}
+                className="px-6 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
