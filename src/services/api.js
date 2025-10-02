@@ -108,8 +108,10 @@ export const propertiesAPI = {
   updateProperty: (id, data) =>{
     return api.put(`/properties/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
+  getDeleted: () => api.get('/properties/deleted'),
   deleteProperty: (id) => api.delete(`/properties/${id}`),
-  search: (query) => api.get('/properties/search', { params: query }),
+  restoreProperty: (id) => api.put(`/properties/admin/${id}/restore`),
+  permanentlyDeleteProperty: (id) => api.delete(`/properties/admin/${id}/permanent`),
   uploadImages: (propertyId, formData) => {
     return api.post(`/properties/${propertyId}/images`, formData, {
       headers: {

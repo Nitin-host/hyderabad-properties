@@ -165,13 +165,11 @@ const Properties = () => {
 
     // Search filter
     if (searchTerm) {
+      const s = searchTerm.toLowerCase().trim(); // trim search term
       filtered = filtered.filter((property) => {
-        const title = property?.title || "";
-        const location = property?.location || "";
-        return (
-          title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          location.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const title = (property?.title || "").toLowerCase().trim(); // trim title
+        const location = (property?.location || "").toLowerCase().trim(); // trim location
+        return title.includes(s) || location.includes(s);
       });
     }
 
