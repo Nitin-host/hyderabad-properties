@@ -97,6 +97,7 @@ export const propertyFormConfig = {
           placeholder: "Enter nearby landmarks",
           validation: { maxLength: 500 },
           rows: 3,
+          required: true
         },
       ],
     },
@@ -328,6 +329,7 @@ export const propertyFormConfig = {
             { value: "no charge", label: "No Charge" },
             { value: "Contact for details", label: "Contact for Details" },
           ],
+          required: true
         },
       ],
     },

@@ -382,7 +382,7 @@ const NeonVideoPlayer = ({
                 value={muted ? 0 : volume}
                 onChange={(e) => handleVolumeChange(Number(e.target.value))}
                 className="w-24"
-                style={{ accentColor: "#8b5cf6" }}
+                style={{ accentColor: "#E8A667" }}
               />
             </div>
             {/* Fullscreen */}
