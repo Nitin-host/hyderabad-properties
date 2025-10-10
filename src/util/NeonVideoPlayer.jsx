@@ -38,26 +38,34 @@ const NeonVideoPlayer = ({
     v.muted = muted;
     if (autoPlay) v.play().catch(() => {});
   }, [volume, muted, autoPlay]);
-  useEffect(() => {
+    useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+
     const syncState = () => {
-      setIsPlaying(!v.paused);
-      setCurrent(v.currentTime);
-      setDuration(v.duration || 0);
+        setIsPlaying(!v.paused);
+        setCurrent(v.currentTime);
+        setDuration(v.duration || 0);
     };
+    const onEndFullscreen = () => {
+        setIsFullscreen(false);
+    };
+
     v.addEventListener("loadedmetadata", syncState);
     v.addEventListener("play", () => setIsPlaying(true));
     v.addEventListener("pause", () => setIsPlaying(false));
     v.addEventListener("timeupdate", () => setCurrent(v.currentTime));
     v.addEventListener("ended", () => setIsPlaying(false));
+    v.addEventListener("webkitendfullscreen", onEndFullscreen);
+
     return () => {
-      v.removeEventListener("loadedmetadata", syncState);
-      v.removeEventListener("play", () => setIsPlaying(true));
-      v.removeEventListener("pause", () => setIsPlaying(false));
-      v.removeEventListener("timeupdate", () => setCurrent(v.currentTime));
+        v.removeEventListener("loadedmetadata", syncState);
+        v.removeEventListener("play", () => setIsPlaying(true));
+        v.removeEventListener("pause", () => setIsPlaying(false));
+        v.removeEventListener("timeupdate", () => setCurrent(v.currentTime));
+        v.removeEventListener("webkitendfullscreen", onEndFullscreen);
     };
-  }, []);
+    }, []);
   useEffect(() => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFsChange);
