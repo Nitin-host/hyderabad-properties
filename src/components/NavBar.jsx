@@ -22,12 +22,20 @@ const NavBar = ({
   const { user, logout, isAuthenticated, hasAdminAccess, isSuperAdmin } =
     useAuth();
   const location = useLocation();
-  const menuRef = useRef(null); // ref for the user menu
+
+  // Separate refs for mobile and desktop menus
+  const mobileMenuRef = useRef(null);
+  const desktopMenuRef = useRef(null);
 
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target) &&
+        desktopMenuRef.current &&
+        !desktopMenuRef.current.contains(event.target)
+      ) {
         setShowUserMenu(false);
       }
     };
@@ -78,7 +86,7 @@ const NavBar = ({
             </span>
           </Link>
 
-          <div className="flex items-center space-x-2" ref={menuRef}>
+          <div className="flex items-center space-x-2" ref={mobileMenuRef}>
             {isAuthenticated ? (
               <div className="relative">
                 <button
@@ -93,7 +101,7 @@ const NavBar = ({
                     <div className="px-4 py-2 border-b border-gray-700">
                       <p className="text-sm text-gray-300">{user.name}</p>
                       <p className="text-xs text-gray-400">{user.email}</p>
-                      {hasAdminAccess() &&user.role && (
+                      {hasAdminAccess() && user.role && (
                         <span
                           className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
                             isSuperAdmin()
@@ -118,8 +126,8 @@ const NavBar = ({
                       </Link>
                     )}
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         logout();
                         setShowUserMenu(false);
                       }}
@@ -187,7 +195,7 @@ const NavBar = ({
           </nav>
         </div>
 
-        <div className="flex items-center space-x-4" ref={menuRef}>
+        <div className="flex items-center space-x-4" ref={desktopMenuRef}>
           {isAuthenticated ? (
             <div className="relative">
               <button
@@ -227,8 +235,8 @@ const NavBar = ({
                     </Link>
                   )}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onMouseDown={(e) => {
+                      e.preventDefault();
                       logout();
                       setShowUserMenu(false);
                     }}

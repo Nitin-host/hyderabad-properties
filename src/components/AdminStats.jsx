@@ -16,12 +16,19 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { TrendingUp, Home, IndianRupee, Image, Video, Slash } from "lucide-react";
+import {
+  TrendingUp,
+  Home,
+  IndianRupee,
+  Image,
+  Video,
+  Slash,
+  LayoutDashboard,
+} from "lucide-react";
 import api from "../services/api";
 
 const COLORS = ["#3b82f6", "#22c55e", "#f97316", "#a855f7", "#ef4444"];
 
-// import statements remain same
 const AdminDashboard = () => {
   const { user, hasAdminAccess } = useAuth();
   const navigate = useNavigate();
@@ -31,7 +38,10 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!hasAdminAccess()) { navigate("/"); return; }
+    if (!hasAdminAccess()) {
+      navigate("/");
+      return;
+    }
 
     const fetchStats = async () => {
       try {
@@ -40,24 +50,48 @@ const AdminDashboard = () => {
           setStats(res.data);
           mapCreationStats(res.data?.creationStats);
         }
-      } catch (err) { console.error(err); setError(err); }
+      } catch (err) {
+        console.error(err);
+        setError(err);
+      }
     };
     fetchStats();
   }, [hasAdminAccess, navigate, timeRange]);
 
   const mapCreationStats = (data) => {
-    const mapped = data.map(item => {
-      if (timeRange === "week") return { period: `W${item._id.week} ${item._id.year}`, count: item.count };
-      if (timeRange === "month") return { period: `${item._id.month}/${item._id.year}`, count: item.count };
+    const mapped = data.map((item) => {
+      if (timeRange === "week")
+        return {
+          period: `W${item._id.week} ${item._id.year}`,
+          count: item.count,
+        };
+      if (timeRange === "month")
+        return {
+          period: `${item._id.month}/${item._id.year}`,
+          count: item.count,
+        };
       return { period: `${item._id.year}`, count: item.count };
     });
     setCreationStats(mapped);
   };
 
   if (error) throw error;
-  if (!stats) return <p className="text-center text-gray-400">Loading Dashboard...</p>;
+  if (!stats)
+    return <p className="text-center text-gray-400">Loading Dashboard...</p>;
 
   const { overview, propertyTypeDistribution, statusDistribution } = stats;
+
+  const tooltipStyle = {
+    backgroundColor: "#1f2937",
+    border: "none",
+    borderRadius: 6,
+    padding: "6px 8px",
+    color: "#fff",
+    fontSize: "0.8rem",
+    whiteSpace: "nowrap",
+    maxWidth: 180,
+    overflowWrap: "break-word",
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -95,34 +129,37 @@ const AdminDashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Property Type Distribution */}
         <ChartCard title="Property Type Distribution">
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={propertyTypeDistribution}
-                dataKey="count"
-                nameKey="_id"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ _id, percent }) =>
-                  `${_id}: ${(percent * 100).toFixed(1)}%`
-                }
-              >
-                {propertyTypeDistribution.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name, props) => [
-                  `${value} (${props.payload.percentage}%)`,
-                  name,
-                ]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          <h2 className="text-lg font-semibold mb-2">Property Type Distribution</h2>
+          <div className="w-full h-64 sm:h-72 lg:h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={propertyTypeDistribution}
+                  dataKey="count"
+                  nameKey="_id"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="70%"
+                  label
+                  labelLine={false}
+                  // labelLine={false}
+                  // label={({ _id, percent }) =>
+                  //   `${_id}: ${(percent * 100).toFixed(1)}%`
+                  // }
+                >
+                  {propertyTypeDistribution.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Legend  />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </ChartCard>
 
+        {/* Property Creation */}
         <ChartCard title="Property Creation">
           <div className="flex justify-end mb-2">
             <select
@@ -135,45 +172,48 @@ const AdminDashboard = () => {
               <option value="year">Year</option>
             </select>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={creationStats}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-              <XAxis dataKey="period" stroke="#ccc" />
-              <YAxis stroke="#ccc" />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#3b82f6"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="w-full h-64 sm:h-72 lg:h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={creationStats}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                <XAxis dataKey="period" stroke="#ccc" />
+                <YAxis stroke="#ccc" />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ stroke: "#3b82f6", strokeWidth: 2 }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </ChartCard>
       </div>
 
+      {/* Property Status Breakdown */}
       <ChartCard title="Property Status Breakdown">
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={statusDistribution}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-            <XAxis dataKey="status" stroke="#ccc" />
-            <YAxis stroke="#ccc" />
-            <Tooltip
-              formatter={(value, name, props) => [
-                `${value} (${props.payload.percentage}%)`,
-                name,
-              ]}
-            />
-            <Legend />
-            <Bar dataKey="count">
-              {statusDistribution.map((_, i) => {
-                const colors = ["#22c55e", "#ef4444", "#f97316", "#6b7280"];
-                return <Cell key={i} fill={colors[i]} />;
-              })}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="w-full h-64 sm:h-72 lg:h-[350px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={statusDistribution}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+              <XAxis dataKey="status" stroke="#ccc" />
+              <YAxis stroke="#ccc" />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend />
+              <Bar dataKey="count">
+                {statusDistribution.map((_, i) => {
+                  const colors = ["#22c55e", "#ef4444", "#f97316", "#6b7280"];
+                  return <Cell key={i} fill={colors[i]} />;
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </ChartCard>
     </div>
   );
@@ -189,8 +229,9 @@ const Card = ({ icon, title, value }) => (
 );
 
 const ChartCard = ({ title, children }) => (
-  <div className="bg-gray-800 text-white rounded-2xl shadow-lg p-6">{children}</div>
+  <div className="bg-gray-800 text-white rounded-2xl shadow-lg p-6">
+    {children}
+  </div>
 );
 
 export default AdminDashboard;
-

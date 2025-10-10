@@ -424,7 +424,7 @@ function TableUtil({
         </div>
       )}
       {/* Pagination */}
-      {totalPages > 1 && (
+      {filteredData.length > 0 && (
         <div className="flex justify-between items-center gap-3 my-3 flex-wrap">
           <div className="flex items-center gap-1 flex-wrap">
             {/* First Page */}
@@ -434,7 +434,7 @@ function TableUtil({
               disabled={currentPage === 1}
               title="First"
             >
-              <ChevronsLeft  className="w-4 h-4" />
+              <ChevronsLeft className="w-4 h-4" />
             </button>
 
             {/* Previous Page */}
@@ -479,7 +479,7 @@ function TableUtil({
               disabled={currentPage === totalPages}
               title="Last"
             >
-              <ChevronsRight  className="w-4 h-4" />
+              <ChevronsRight className="w-4 h-4" />
             </button>
           </div>
 

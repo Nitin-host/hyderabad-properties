@@ -1,50 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react';
-import PropertyCard from './PropertyCard';
-import PropertyManagement from './PropertyManagement';
-import { propertiesAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { Search, Filter, MapPin, Home, DollarSign, Grid, List, AlertCircle, X } from 'lucide-react';
-import StickyContactForm from './ContactForm';
-import StickyWhatsApp from './StickyWhatsApp.jsx';
+import React, { useState, useEffect } from "react";
+import PropertyCard from "./PropertyCard";
+import { propertiesAPI } from "../services/api";
+import {
+  Filter,
+  Grid,
+  List,
+  X,
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
+import StickyWhatsApp from "./StickyWhatsApp.jsx";
+import TableUtil from "../util/TableUtil.jsx";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
-// FilterPopover Component
-const FilterPopover = ({ filters, handleFilterChange, clearFilters }) => {
+// Filter Popover Component
+const FilterPopover = ({
+  filters,
+  filterOptions,
+  handleFilterChange,
+  clearFilters,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const popoverRef = useRef(null);
 
-  // Close popover when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Check if any filter is active
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const hasActiveFilters = Object.values(filters).some((value) => value !== "");
 
   return (
-    <div className="relative" ref={popoverRef}>
+    <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-3 rounded-lg flex items-center justify-center ${hasActiveFilters ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'} transition-colors`}
-        title="Filter properties"
+        className={`p-3 rounded-lg flex items-center justify-center ${
+          hasActiveFilters
+            ? "bg-blue-600 text-white"
+            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+        } transition-colors`}
       >
         <Filter size={20} />
       </button>
-      {/* <StickyContactForm/> */}
-      <StickyWhatsApp />
+
       {isOpen && (
         <div className="absolute right-0 mt-2 w-72 bg-gray-800 rounded-lg shadow-lg z-10 p-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-white font-medium">Filters</h3>
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="text-gray-400 hover:text-white"
             >
@@ -53,57 +54,49 @@ const FilterPopover = ({ filters, handleFilterChange, clearFilters }) => {
           </div>
 
           <div className="space-y-4">
+            {/* Property Type */}
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Property Type</label>
+              <label className="block text-sm text-gray-400 mb-1">
+                Property Type
+              </label>
               <select
                 value={filters.propertyType}
-                onChange={(e) => handleFilterChange('propertyType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white text-sm"
+                onChange={(e) =>
+                  handleFilterChange("propertyType", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm"
               >
                 <option value="">All Property Types</option>
-                <option value="Apartment">Apartment</option>
-                <option value="Villa">Villa</option>
-                <option value="House">House</option>
-                <option value="Plot">Plot</option>
+                {filterOptions.propertyTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Bedrooms */}
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Price Range</label>
-              <select
-                value={filters.priceRange}
-                onChange={(e) => handleFilterChange('priceRange', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white text-sm"
-              >
-                <option value="">All Price Ranges</option>
-                <option value="0-2500000">Under ₹25L</option>
-                <option value="2500000-5000000">₹25L - ₹50L</option>
-                <option value="5000000-10000000">₹50L - ₹1Cr</option>
-                <option value="10000000-99999999">Above ₹1Cr</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Bedrooms</label>
+              <label className="block text-sm text-gray-400 mb-1">
+                Bedrooms
+              </label>
               <select
                 value={filters.bedrooms}
-                onChange={(e) => handleFilterChange('bedrooms', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white text-sm"
+                onChange={(e) => handleFilterChange("bedrooms", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm"
               >
                 <option value="">All Bedrooms</option>
-                <option value="1BHK">1BHK</option>
-                <option value="2BHK">2BHK</option>
-                <option value="3BHK">3BHK</option>
-                <option value="4BHK">4BHK</option>
-                <option value="5+BHK">5+BHK</option>
+                {filterOptions.bedrooms.map((bed) => (
+                  <option key={bed} value={bed}>
+                    {bed}
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Clear Filters */}
             <button
-              onClick={() => {
-                clearFilters();
-                setIsOpen(false);
-              }}
+              onClick={clearFilters}
               className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-500 transition-colors text-sm"
             >
               Clear All Filters
@@ -116,40 +109,53 @@ const FilterPopover = ({ filters, handleFilterChange, clearFilters }) => {
 };
 
 const Properties = () => {
-  const { canManageProperties } = useAuth();
   const [properties, setProperties] = useState([]);
-  const [filteredProperties, setFilteredProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    propertyType: "",
-    priceRange: "",
-    bedrooms: "",
-    city: "",
+
+  const [filters, setFilters] = useState({ propertyType: "", bedrooms: "" });
+  const [filterOptions, setFilterOptions] = useState({
+    propertyTypes: [],
+    bedrooms: [],
   });
 
-  // Fetch properties from API
+  const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState("grid");
+  const location = useLocation();
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(8);
+  const [totalPages, setTotalPages] = useState(1);
+  const { hasAdminAccess } = useAuth();
+
+  // Fetch properties
   const fetchProperties = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await propertiesAPI.getAll();
-      const propertiesData = response.data || response.properties || response;
-      if (Array.isArray(propertiesData)) {
-        setProperties(propertiesData);
-        setFilteredProperties(propertiesData);
-      } else {
-        setProperties([]);
-        setFilteredProperties([]);
-      }
+
+      const params = {
+        page,
+        limit,
+        search: searchTerm || undefined,
+        propertyType: filters.propertyType || undefined,
+        bedrooms: filters.bedrooms || undefined,
+      };
+
+      const response = await propertiesAPI.getAll(params); // Pass pagination & filters
+      const { data, pagination } = response;
+
+      setProperties(data || []);
+      setTotalPages(pagination.pages || 1);
+
+      // Dynamic filters from fetched data
+      const types = [...new Set((data || []).map((p) => p.propertyType))];
+      const beds = [...new Set((data || []).map((p) => p.bedrooms))];
+      setFilterOptions({ propertyTypes: types, bedrooms: beds });
     } catch (err) {
-      setError(
-        err.message || "Failed to load properties. Please try again later."
-      );
+      setError(err.message || "Failed to load properties");
       setProperties([]);
-      setFilteredProperties([]);
     } finally {
       setLoading(false);
     }
@@ -157,204 +163,228 @@ const Properties = () => {
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [page, limit, searchTerm, filters]);
 
-  // Filter properties based on search and filters
-  useEffect(() => {
-    let filtered = properties;
-
-    // Search filter
-    if (searchTerm) {
-      const s = searchTerm.toLowerCase().trim(); // trim search term
-      filtered = filtered.filter((property) => {
-        const title = (property?.title || "").toLowerCase().trim(); // trim title
-        const location = (property?.location || "").toLowerCase().trim(); // trim location
-        return title.includes(s) || location.includes(s);
-      });
-    }
-
-    // Property type filter
-    if (filters.propertyType) {
-      filtered = filtered.filter(
-        (property) => property.propertyType === filters.propertyType
-      );
-    }
-
-    // Price range filter
-    if (filters.priceRange) {
-      const [min, max] = filters.priceRange.split("-").map(Number);
-      filtered = filtered.filter((property) => {
-        if (max) {
-          return property.price >= min && property.price <= max;
-        }
-        return property.price >= min;
-      });
-    }
-
-    // Bedrooms filter
-    if (filters.bedrooms) {
-      filtered = filtered.filter(
-        (property) => property.bedrooms === filters.bedrooms
-      );
-    }
-
-    setFilteredProperties(filtered);
-  }, [searchTerm, filters, properties]);
-
-  const handleFilterChange = (filterType, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterType]: value,
-    }));
+  const handleFilterChange = (type, value) => {
+    setFilters((prev) => ({ ...prev, [type]: value }));
+    setPage(1); // reset page when filter changes
   };
 
   const clearFilters = () => {
-    setFilters({
-      propertyType: "",
-      priceRange: "",
-      bedrooms: "",
-      city: "",
-    });
+    setFilters({ propertyType: "", bedrooms: "" });
     setSearchTerm("");
+    setPage(1);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-700 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-800 rounded-lg shadow-md p-4"
-                >
-                  <div className="h-48 bg-gray-700 rounded mb-4"></div>
-                  <div className="h-4 bg-gray-700 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Helper: generate visible page numbers with ellipsis
+  const getPageNumbers = (currentPage, totalPages, maxVisible = 5) => {
+    const pages = [];
 
-  if (error) {
-    throw error;
-  }
+    if (totalPages <= maxVisible) {
+      // If total pages are less than max visible, show all
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const sideCount = Math.floor(maxVisible / 2);
+      let start = Math.max(currentPage - sideCount, 1);
+      let end = start + maxVisible - 1;
+
+      if (end > totalPages) {
+        end = totalPages;
+        start = totalPages - maxVisible + 1;
+      }
+
+      if (start > 1) pages.push(1); // first page
+      if (start > 2) pages.push("start-ellipsis"); // left ellipsis
+
+      for (let i = start; i <= end; i++) pages.push(i);
+
+      if (end < totalPages - 1) pages.push("end-ellipsis"); // right ellipsis
+      if (end < totalPages) pages.push(totalPages); // last page
+    }
+
+    return pages;
+  };
+
+  const tableHeader = [
+    {
+      label: "Property",
+      key: "title",
+      imageKey: "images.0.presignUrl",
+      textKey: "title",
+    },
+    { label: "Bedrooms", key: "bedrooms" },
+    { label: "Location", key: "location" },
+    { label: "Price", key: "price", dataFormat: "currency" },
+    { label: "Type", key: "propertyType" },
+    { label: "Status", key: "status" },
+  ];
+  const enableMobileView = location.pathname !== "/";
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 px-4 sm:px-6 lg:px-0">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center">
-            {/* Column 1: Header and count */}
-            <div className="col-span-1 lg:col-span-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                  Properties in Kondapur-HYD
-                </h1>
-                <span className="text-lg font-normal text-gray-400">
-                  ({filteredProperties.length})
-                </span>
-              </div>
-              <p className="text-gray-400 mt-1 text-sm sm:text-base">
-                Discover your dream property from our extensive collection
-              </p>
-            </div>
+        {/* Header + Search + Filter */}
+        <div className="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-white">
+              Properties in Kondapur-HYD
+            </h1>
+            <p className="text-gray-400 mt-1">
+              Discover your dream property from our extensive collection
+            </p>
+          </div>
 
-            {/* Column 2: Search, Filter, View Toggle */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mt-4 lg:mt-0">
-              {/* Search Bar + Filter */}
-              <div className="flex flex-1 items-center gap-2">
-                {/* Search Bar */}
-                <div className="relative flex-grow">
-                  <Search
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    size={20}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search by location, property name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-white"
-                  />
-                </div>
-
-                {/* Filter Button */}
-                <FilterPopover
-                  filters={filters}
-                  handleFilterChange={handleFilterChange}
-                  clearFilters={clearFilters}
-                />
-              </div>
-
-              {/* View Mode Toggle - Hidden on Mobile */}
-              <div className="hidden md:block">
-                <button
-                  onClick={() =>
-                    setViewMode(viewMode === "grid" ? "list" : "grid")
-                  }
-                  className="p-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-                  title={
-                    viewMode === "grid"
-                      ? "Switch to list view"
-                      : "Switch to grid view"
-                  }
-                >
-                  {viewMode === "grid" ? (
-                    <List size={20} />
-                  ) : (
-                    <Grid size={20} />
-                  )}
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search by location or title..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500"
+            />
+            <FilterPopover
+              filters={filters}
+              filterOptions={filterOptions}
+              handleFilterChange={handleFilterChange}
+              clearFilters={clearFilters}
+            />
+            {hasAdminAccess() && (
+              <button
+                onClick={() =>
+                  setViewMode(viewMode === "grid" ? "list" : "grid")
+                }
+                className="p-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                {viewMode === "grid" ? <List size={20} /> : <Grid size={20} />}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Property Management - Only for Admin/Super Admin */}
-        {canManageProperties() && (
-          <PropertyManagement
-            properties={properties}
-            refreshProperties={fetchProperties}
-          />
-        )}
-
-        {/* Properties Grid/List View */}
-        {filteredProperties.length === 0 ? (
-          <div className="text-center py-12">
-            <Home size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">
-              No properties found
-            </h3>
-            <p className="text-gray-500">
-              Try adjusting your search criteria or filters
-            </p>
-          </div>
-        ) : (
-          <div
-            className={`grid gap-6 ${
-              viewMode === "grid"
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                : "grid-cols-1"
-            }`}
-          >
-            {filteredProperties.map((property, index) => (
-              <PropertyCard
-                key={property._id?.$oid || property._id || property.id || index}
-                property={property}
+        {/* Properties Grid/List */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: limit }).map((_, idx) => (
+              <div
+                key={idx}
+                className="h-72 bg-gray-700 animate-pulse rounded-lg"
               />
             ))}
           </div>
+        ) : properties.length === 0 ? (
+          <div className="text-center text-gray-400 py-12">
+            <Home size={48} className="mx-auto mb-4" />
+            No properties found
+          </div>
+        ) : (
+          <>
+            {hasAdminAccess() && viewMode === "list" ? (
+              <TableUtil
+                tableName=""
+                tableData={properties}
+                tableHeader={tableHeader}
+                enableMobileView={enableMobileView}
+              />
+            ) : (
+              <div
+                className={`grid gap-6 ${
+                  viewMode === "list"
+                    ? "grid-cols-1"
+                    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                }`}
+              >
+                {properties.map((property) => (
+                  <PropertyCard
+                    key={property._id || property.id}
+                    property={property}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Pagination & Rows per Page */}
+        {(!hasAdminAccess() || viewMode === "grid") && (
+          <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+            {/* Rows per page - always visible */}
+            <div className="flex items-center gap-2 text-gray-300">
+              <span>Rows per page:</span>
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="bg-gray-700 text-white px-3 py-1 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                {[4, 8, 12, 16, 20, 24].map((num) => (
+                  <option key={num} value={num}>
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Page navigation - only if multiple pages */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1 text-gray-300 flex-wrap">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(1)}
+                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage((prev) => prev - 1)}
+                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {getPageNumbers(page, totalPages).map((pageNum, idx) =>
+                  pageNum === "start-ellipsis" || pageNum === "end-ellipsis" ? (
+                    <span key={idx} className="px-2 py-1 text-gray-400">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={idx}
+                      onClick={() => setPage(pageNum)}
+                      className={`px-3 py-1 rounded-lg transition-colors ${
+                        pageNum === page
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                )}
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage(totalPages)}
+                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
+      <StickyWhatsApp />
     </div>
   );
 };

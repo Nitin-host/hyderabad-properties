@@ -443,6 +443,8 @@ const handleView = (property) => {
     { label: "Price", key: "price", dataFormat: "currency" },
     { label: "Type", key: "propertyType" },
     { label: "Status", key: "status" },
+    { label: "Created By", key: "createdBy.name" },
+    { label: "Updated By", key: "updatedBy.name" },
   ];
 
   const enableMobileView = location.pathname !== "/";
@@ -508,16 +510,20 @@ const handleView = (property) => {
               btnClass:
                 "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
             },
-            {
-              label: "Deleted Properties",
-              icon: Trash2,
-              onClick: () => {
-                setShowDeleted(true);
-                fetchDeletedProperties(); // 🔥 load deleted from API
-              },
-              btnClass:
-                "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
-            },
+            ...(!showDeleted
+              ? [
+                  {
+                    label: "Deleted Properties",
+                    icon: Trash2,
+                    onClick: () => {
+                      setShowDeleted(true);
+                      fetchDeletedProperties(); // 🔥 load deleted from API
+                    },
+                    btnClass:
+                      "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
+                  },
+                ]
+              : []),
           ]}
           enableMobileView={enableMobileView}
           tableActions={
@@ -534,6 +540,7 @@ const handleView = (property) => {
                     btnTitle: "Delete Permanently",
                     btnClass: "text-red-600 hover:text-red-500",
                     iconComponent: Trash2,
+                    isVisible: () => user?.role === "super_admin",
                     btnAction: (property) => PermanentlyDelete(property._id),
                   },
                   {
