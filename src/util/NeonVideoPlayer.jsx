@@ -1,14 +1,13 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Play,
   Pause,
-  RefreshCw,
+  CornerDownLeft,
   Volume2,
   VolumeX,
-  CornerDownLeft,
-  UploadCloud,
   Maximize,
   Minimize,
+  UploadCloud,
 } from "lucide-react";
 
 const NeonVideoPlayer = ({
@@ -23,173 +22,111 @@ const NeonVideoPlayer = ({
 }) => {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
-  const progressRef = useRef(null);
-
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
-  const [hovering, setHovering] = useState(false);
-  const [localSrc, setLocalSrc] = useState(src);
-  const [isSeeking, setIsSeeking] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [localSrc, setLocalSrc] = useState(src);
 
   useEffect(() => setLocalSrc(src), [src]);
-
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     v.volume = volume;
     v.muted = muted;
     if (autoPlay) v.play().catch(() => {});
-  }, []);
-
-  const togglePlay = useCallback(async () => {
+  }, [volume, muted, autoPlay]);
+  useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused || v.ended) {
-      await v.play().catch(() => {});
-      setIsPlaying(true);
-    } else {
-      v.pause();
-      setIsPlaying(false);
-    }
+    const syncState = () => {
+      setIsPlaying(!v.paused);
+      setCurrent(v.currentTime);
+      setDuration(v.duration || 0);
+    };
+    v.addEventListener("loadedmetadata", syncState);
+    v.addEventListener("play", () => setIsPlaying(true));
+    v.addEventListener("pause", () => setIsPlaying(false));
+    v.addEventListener("timeupdate", () => setCurrent(v.currentTime));
+    v.addEventListener("ended", () => setIsPlaying(false));
+    return () => {
+      v.removeEventListener("loadedmetadata", syncState);
+      v.removeEventListener("play", () => setIsPlaying(true));
+      v.removeEventListener("pause", () => setIsPlaying(false));
+      v.removeEventListener("timeupdate", () => setCurrent(v.currentTime));
+    };
+  }, []);
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
+  const play = () => videoRef.current?.play();
+  const pause = () => videoRef.current?.pause();
+  const togglePlay = () => (isPlaying ? pause() : play());
   const handleReplay = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      play();
+    }
+  };
+  const toggleFullscreen = () => {
     const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = 0;
-    v.play().catch(() => {});
-    setIsPlaying(true);
+    const containerEl = containerRef.current;
+    if (!v || !containerEl) return;
+    if ("webkitEnterFullscreen" in v) {
+      v.webkitEnterFullscreen();
+      setIsFullscreen(true);
+    } else if (!document.fullscreenElement) {
+      containerEl.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
   };
-
-  const formatTime = (s = 0) => {
-    if (!Number.isFinite(s)) return "00:00";
-    const sec = Math.floor(s % 60)
-      .toString()
-      .padStart(2, "0");
-    const min = Math.floor((s / 60) % 60)
-      .toString()
-      .padStart(2, "0");
-    const hr = Math.floor(s / 3600)
-      .toString()
-      .padStart(2, "0");
-    return hr === "00" ? `${min}:${sec}` : `${hr}:${min}:${sec}`;
+  const handleVolumeChange = (val) => {
+    setVolume(val);
+    if (videoRef.current) {
+      videoRef.current.volume = val;
+      setMuted(val === 0);
+    }
   };
-
-  const handleTimeUpdate = () => {
-    const v = videoRef.current;
-    if (!v || isSeeking) return;
-    setCurrent(v.currentTime);
-  };
-
-  const handleLoadedMetadata = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    setDuration(isFinite(v.duration) ? v.duration : 0);
-  };
-
-  const handleVolumeChange = (value) => {
-    const v = videoRef.current;
-    if (!v) return;
-    const vol = Math.max(0, Math.min(1, value));
-    setVolume(vol);
-    v.volume = vol;
-    setMuted(vol === 0);
-  };
-
   const toggleMute = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    const newMuted = !muted;
-    setMuted(newMuted);
-    v.muted = newMuted;
+    setMuted((prev) => !prev);
+    if (videoRef.current) videoRef.current.muted = !muted;
   };
-
-  const handleReplaceFile = async (e) => {
+  const handleSeek = (e) => {
+    const rect = e.target.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    const time = pct * duration;
+    if (videoRef.current) videoRef.current.currentTime = time;
+    setCurrent(time);
+  };
+  const handleReplaceFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     setLocalSrc(url);
-    if (onReplace) await onReplace(file);
+    onReplace?.(file);
   };
-
   const handleDelete = () => {
     setLocalSrc(null);
-    if (onDelete) onDelete();
+    onDelete?.();
   };
-
-    useEffect(() => {
-        const handleFsChange = () =>
-        setIsFullscreen(!!document.fullscreenElement);
-        document.addEventListener("fullscreenchange", handleFsChange);
-        return () =>
-        document.removeEventListener("fullscreenchange", handleFsChange);
-    }, []);
-
-  // --- Fullscreen ---
-   const toggleFullscreen = () => {
-     const containerEl = containerRef.current;
-     if (!containerEl) return;
-
-     if (!document.fullscreenElement) {
-       containerEl.requestFullscreen().catch(console.error);
-       setIsFullscreen(true);
-     } else {
-       document.exitFullscreen().catch(console.error);
-       setIsFullscreen(false);
-     }
-   };
-
-  // --- Seek handling ---
-  const handleSeek = (clientX) => {
-    const bar = progressRef.current;
-    const v = videoRef.current;
-    if (!bar || !v || !duration) return;
-    const rect = bar.getBoundingClientRect();
-    let pct = (clientX - rect.left) / rect.width;
-    pct = Math.max(0, Math.min(1, pct));
-    v.currentTime = pct * duration;
-    setCurrent(pct * duration);
+  const formatTime = (s = 0) => {
+    s = Math.round(s);
+    const sec = `${s % 60}`.padStart(2, "0");
+    const min = `${Math.floor(s / 60)}`.padStart(2, "0");
+    const hr = Math.floor(s / 3600);
+    return hr ? `${hr}:${min}:${sec}` : `${min}:${sec}`;
   };
+  const fsClass = isFullscreen ? "neon-fs" : "";
 
-  const handlePointerDown = (e) => {
-    setIsSeeking(true);
-    handleSeek(e.clientX || (e.touches && e.touches[0].clientX));
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp, { once: true });
-  };
-
-  const handlePointerMove = (e) => handleSeek(e.clientX);
-  const handlePointerUp = () => {
-    setTimeout(() => setIsSeeking(false), 50);
-    window.removeEventListener("pointermove", handlePointerMove);
-    window.removeEventListener("pointerup", handlePointerUp);
-  };
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    v.addEventListener("play", onPlay);
-    v.addEventListener("pause", onPause);
-    v.addEventListener("timeupdate", handleTimeUpdate);
-    v.addEventListener("loadedmetadata", handleLoadedMetadata);
-    v.addEventListener("ended", () => setIsPlaying(false));
-    return () => {
-      v.removeEventListener("play", onPlay);
-      v.removeEventListener("pause", onPause);
-      v.removeEventListener("timeupdate", handleTimeUpdate);
-      v.removeEventListener("loadedmetadata", handleLoadedMetadata);
-    };
-  }, [duration, isSeeking]);
-
-  const percent = duration ? Math.min(100, (current / duration) * 100) : 0;
-
-  // --- Upload UI if no video exists ---
   if (!localSrc && canEdit) {
     return (
       <div
@@ -216,126 +153,36 @@ const NeonVideoPlayer = ({
   return (
     <div
       ref={containerRef}
-      className={`relative rounded-2xl overflow-hidden ${className} ${
-        isFullscreen ? "fullscreen" : ""
-      }`}
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      tabIndex={0}
-      role="region"
-      aria-label="Neon video player"
+      className={`relative w-full h-full ${fsClass} ${className}`}
     >
-      <div
-        className="absolute inset-0 pointer-events-none rounded-2xl"
-        style={{
-          boxShadow:
-            "0 6px 30px rgba(99,102,241,0.12), 0 0 40px rgba(124,58,237,0.12), inset 0 0 40px rgba(59,130,246,0.06)",
-          border: "1px solid rgba(255,255,255,0.04)",
-        }}
+      <video
+        ref={videoRef}
+        src={localSrc}
+        poster={poster}
+        className="w-full h-full object-cover bg-black"
+        controls={false}
+        playsInline
+        muted={autoPlay}
+        autoPlay={autoPlay}
+        tabIndex={0}
+        aria-label="Custom Video Player"
+        onClick={togglePlay}
       />
-      <div className="relative bg-black">
-        <video
-          ref={videoRef}
-          src={localSrc}
-          poster={poster}
-          className="w-full h-64 md:h-80 object-cover bg-black"
-          controls={false}
-          playsInline
-        />
-
-        {/* Big Play */}
-        <button
-          aria-label={isPlaying ? "Pause" : "Play"}
-          onClick={togglePlay}
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
-            hovering ? "opacity-100" : "opacity-0"
-          }`}
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.45))",
-          }}
-        >
-          <div
-            className="p-4 rounded-full backdrop-blur-sm border border-white/10 transform transition-transform hover:scale-105"
-            style={{
-              boxShadow:
-                "0 6px 30px rgba(59,130,246,0.14), 0 0 24px rgba(168,85,247,0.08)",
-            }}
-          >
-            {isPlaying ? (
-              <Pause className="w-12 h-12 text-white" />
-            ) : (
-              <Play className="w-12 h-12 text-white" />
-            )}
-          </div>
-        </button>
-
-        {/* Replace + Delete + Fullscreen */}
-        {canEdit && (
-          <div className="absolute top-3 right-3 z-20 flex gap-2">
-            <label
-              title="Replace video"
-              className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium cursor-pointer
-                bg-gradient-to-r from-blue-600/80 via-purple-600/70 to-pink-600/60
-                hover:scale-105 transition-transform"
-            >
-              <UploadCloud size={16} className="text-white" />
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={handleReplaceFile}
-              />
-            </label>
-            {onDelete && (
-              <button
-                onClick={handleDelete}
-                title="Delete video"
-                className="p-2 rounded-full bg-red-600/70 hover:bg-red-600/90 text-white transition"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Controls */}
-      <div
-        className="absolute left-0 right-0 bottom-0 z-30 p-4 bg-gradient-to-t from-black/70 to-transparent"
-        style={{ backdropFilter: "blur(6px)" }}
-      >
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent z-10">
         <div
-          ref={progressRef}
           className="relative h-2 rounded-full bg-white/6 cursor-pointer"
-          onPointerDown={handlePointerDown}
+          onClick={handleSeek}
         >
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background:
-                "linear-gradient(90deg, rgba(241, 189, 99, 0.18), rgba(247, 196, 85, 0.18))",
-            }}
-          />
           <div
             className="absolute left-0 top-0 h-full rounded-full transition-width duration-100"
             style={{
-              width: `${percent}%`,
+              width: `${duration ? (current / duration) * 100 : 0}%`,
               background:
                 "linear-gradient(90deg,rgba(232, 166, 103, 1) 23%, rgba(237, 221, 83, 1) 91%)",
               boxShadow: "0 6px 20px rgba(99,102,241,0.12)",
             }}
           />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow-lg"
-            style={{
-              left: `${percent}%`,
-              transform: `translate(-50%, 0%)`,
-              background: "linear-gradient(180deg,#f6d365,#fda085)",
-            }}
-          />
         </div>
-
         <div className="mt-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
@@ -360,32 +207,28 @@ const NeonVideoPlayer = ({
               {formatTime(current)} / {formatTime(duration)}
             </div>
           </div>
-
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleMute}
-                aria-label={muted ? "Unmute" : "Mute"}
-                className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
-              >
-                {muted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-white" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-white" />
-                )}
-              </button>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={muted ? 0 : volume}
-                onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                className="w-24"
-                style={{ accentColor: "#E8A667" }}
-              />
-            </div>
-            {/* Fullscreen */}
+            <button
+              onClick={toggleMute}
+              aria-label={muted ? "Unmute" : "Mute"}
+              className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
+            >
+              {muted || volume === 0 ? (
+                <VolumeX className="w-4 h-4 text-white" />
+              ) : (
+                <Volume2 className="w-4 h-4 text-white" />
+              )}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={muted ? 0 : volume}
+              onChange={(e) => handleVolumeChange(Number(e.target.value))}
+              className="w-24"
+              style={{ accentColor: "#E8A667" }}
+            />
             {fullScreen && (
               <button
                 onClick={toggleFullscreen}
@@ -402,6 +245,31 @@ const NeonVideoPlayer = ({
           </div>
         </div>
       </div>
+      {canEdit && (
+        <div className="absolute top-3 right-3 z-20 flex gap-2">
+          <label
+            title="Replace video"
+            className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium cursor-pointer bg-gradient-to-r from-blue-600/80 via-purple-600/70 to-pink-600/60 hover:scale-105 transition-transform"
+          >
+            <UploadCloud size={16} className="text-white" />
+            <input
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={handleReplaceFile}
+            />
+          </label>
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              title="Delete video"
+              className="p-2 rounded-full bg-red-600/70 hover:bg-red-600/90 text-white transition"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
