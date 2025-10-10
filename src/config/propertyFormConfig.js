@@ -134,6 +134,7 @@ export const propertyFormConfig = {
             { value: "2", label: "2" },
             { value: "3", label: "3" },
           ],
+          required: true
         },
         {
           name: "size",
@@ -149,6 +150,7 @@ export const propertyFormConfig = {
           label: "Total Floors",
           placeholder: "Total floors in building",
           validation: { min: 1, max: 200 },
+          required: true
         },
         {
           name: "furnished",
@@ -159,6 +161,7 @@ export const propertyFormConfig = {
             { value: "Semi Furnished", label: "Semi Furnished" },
             { value: "Unfurnished", label: "Unfurnished" },
           ],
+          required: true
         },
         {
           name: "parking",
@@ -170,6 +173,7 @@ export const propertyFormConfig = {
             { value: "car & bike", label: "Car & Bike" },
             { value: "none", label: "None" },
           ],
+          required: true
         },
         {
           name: "securityDeposit",
@@ -191,6 +195,7 @@ export const propertyFormConfig = {
             { value: "Vitrified", label: "Vitrified" },
             { value: "Other", label: "Other" },
           ],
+          required: true
         },
         {
           name: "overlooking",
@@ -287,7 +292,7 @@ export const propertyFormConfig = {
           type: "radio-date",
           label: "Property Availability",
           options: [
-            { value: "Immediate", label: "Immediate" },
+            { value: "immediate", label: "Immediate" },
             { value: "date", label: "Select Date" },
           ],
         },
@@ -459,7 +464,7 @@ export const formHelpers = {
         ...propertyFormConfig.defaultFormData,
         ...editingProperty,
         // Ensure amenities array is properly set
-        amenities: editingProperty.amenities || []
+        amenities: editingProperty.amenities || [],
       };
     }
     return { ...propertyFormConfig.defaultFormData };
@@ -470,7 +475,7 @@ export const formHelpers = {
     const errors = {};
     const { validationRules } = propertyFormConfig;
 
-    // Helper function to get nested field value
+    // Helper to safely get nested values
     const getFieldValue = (fieldName) => {
       if (fieldName.includes(".")) {
         const parts = fieldName.split(".");
@@ -483,13 +488,17 @@ export const formHelpers = {
       return formData[fieldName];
     };
 
-    // Check conditional required
+    // ✅ Handle conditional required fields
     if (validationRules.conditionalRequired) {
       Object.entries(validationRules.conditionalRequired).forEach(
         ([field, condition]) => {
           if (condition(formData)) {
-            const value = formData[field];
-            if (!value || value.toString().trim() === "") {
+            const value = getFieldValue(field);
+            if (
+              value === undefined ||
+              value === null ||
+              (typeof value === "string" && value.trim() === "")
+            ) {
               const displayName = field.includes(".")
                 ? field.split(".").pop()
                 : field;
@@ -502,10 +511,14 @@ export const formHelpers = {
       );
     }
 
-    // Check required fields
+    // ✅ Check required fields (0 is allowed)
     validationRules.required.forEach((field) => {
       const value = getFieldValue(field);
-      if (!value || value.toString().trim() === "") {
+      if (
+        value === undefined ||
+        value === null ||
+        (typeof value === "string" && value.trim() === "")
+      ) {
         const displayName = field.includes(".")
           ? field.split(".").pop()
           : field;
@@ -515,10 +528,15 @@ export const formHelpers = {
       }
     });
 
-    // Check numeric fields
+    // ✅ Check numeric fields
     validationRules.numeric.forEach((field) => {
       const value = getFieldValue(field);
-      if (value && isNaN(Number(value))) {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        isNaN(Number(value))
+      ) {
         const displayName = field.includes(".")
           ? field.split(".").pop()
           : field;
@@ -528,7 +546,7 @@ export const formHelpers = {
       }
     });
 
-    // Check min length
+    // ✅ Check min length
     Object.entries(validationRules.minLength).forEach(([field, minLen]) => {
       const value = getFieldValue(field);
       if (value && value.length < minLen) {
@@ -541,7 +559,7 @@ export const formHelpers = {
       }
     });
 
-    // Check max length
+    // ✅ Check max length
     Object.entries(validationRules.maxLength).forEach(([field, maxLen]) => {
       const value = getFieldValue(field);
       if (value && value.length > maxLen) {
@@ -554,10 +572,15 @@ export const formHelpers = {
       }
     });
 
-    // Check min values
+    // ✅ Check min numeric value (0 allowed)
     Object.entries(validationRules.min).forEach(([field, minVal]) => {
       const value = getFieldValue(field);
-      if (value && Number(value) < minVal) {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        Number(value) < minVal
+      ) {
         const displayName = field.includes(".")
           ? field.split(".").pop()
           : field;
@@ -567,10 +590,15 @@ export const formHelpers = {
       }
     });
 
-    // Check max values
+    // ✅ Check max numeric value
     Object.entries(validationRules.max).forEach(([field, maxVal]) => {
       const value = getFieldValue(field);
-      if (value && Number(value) > maxVal) {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        Number(value) > maxVal
+      ) {
         const displayName = field.includes(".")
           ? field.split(".").pop()
           : field;
@@ -593,5 +621,5 @@ export const formHelpers = {
       amenities.splice(index, 1);
     }
     return amenities;
-  }
+  },
 };

@@ -1,34 +1,55 @@
-import React, { useState } from 'react';
-import { Menu, User, LogOut, ChevronRight, Home, LayoutDashboard, X } from 'lucide-react';
-import { useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Menu,
+  User,
+  LogOut,
+  ChevronRight,
+  Home,
+  LayoutDashboard,
+  X,
+} from "lucide-react";
+import { useLocation, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setIsSidebarOpen, onLoginClick }) => {
+const NavBar = ({
+  isDesktopCollapsed,
+  setIsDesktopCollapsed,
+  isSidebarOpen,
+  setIsSidebarOpen,
+  onLoginClick,
+}) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, logout, isAuthenticated, hasAdminAccess, isSuperAdmin } = useAuth();
+  const { user, logout, isAuthenticated, hasAdminAccess, isSuperAdmin } =
+    useAuth();
   const location = useLocation();
+  const menuRef = useRef(null); // ref for the user menu
 
- const getBreadcrumbs = () => {
-   const path = location.pathname;
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-   // Always start with Home
-   const crumbs = [{ name: "Home", path: "/" }];
+  const getBreadcrumbs = () => {
+    const path = location.pathname;
+    const crumbs = [{ name: "Home", path: "/" }];
 
-   if (path === "/admin") {
-     crumbs.push({ name: "Admin Dashboard", path });
-   } else if (path === "/profile") {
-     crumbs.push({ name: "Profile", path });
-   } else if (path === "/favorites") {
-     crumbs.push({ name: "Favorites", path });
-   } else if (path.startsWith("/property/")) {
-     crumbs.push({ name: "Property Details", path });
-   }
+    if (path === "/admin") crumbs.push({ name: "Admin Dashboard", path });
+    else if (path === "/profile") crumbs.push({ name: "Profile", path });
+    else if (path === "/favorites") crumbs.push({ name: "Favorites", path });
+    else if (path.startsWith("/property/"))
+      crumbs.push({ name: "Property Details", path });
 
-   return crumbs;
- };
-
+    return crumbs;
+  };
 
   const breadcrumbs = getBreadcrumbs();
+
   return (
     <>
       {/* Mobile navbar */}
@@ -45,6 +66,7 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
               <Menu size={24} className="text-gray-300" />
             )}
           </button>
+
           <Link to="/" className="flex items-center space-x-2">
             <img
               src="/RR_LOGO.svg"
@@ -55,9 +77,8 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
               RR Properties
             </span>
           </Link>
-          {/* Mobile actions */}
-          <div className="flex items-center space-x-2">
-            {/* Auth section */}
+
+          <div className="flex items-center space-x-2" ref={menuRef}>
             {isAuthenticated ? (
               <div className="relative">
                 <button
@@ -124,7 +145,6 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
       {/* Desktop navbar */}
       <div className="hidden lg:flex items-center justify-between bg-gray-800 shadow-md p-4 w-full sticky top-0 z-50">
         <div className="flex items-center space-x-4">
-          {/* Desktop sidebar toggle */}
           <Link to="/" className="flex items-center space-x-2">
             <img
               src="/RR_LOGO.svg"
@@ -144,7 +164,6 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
             <Menu size={20} className="text-gray-300" />
           </button>
 
-          {/* Breadcrumb navigation */}
           <nav className="flex items-center space-x-2 text-sm">
             {breadcrumbs.map((crumb, index) => (
               <div key={crumb.path} className="flex items-center space-x-2">
@@ -167,9 +186,7 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
           </nav>
         </div>
 
-        {/* Desktop actions */}
-        <div className="flex items-center space-x-4">
-          {/* Auth section */}
+        <div className="flex items-center space-x-4" ref={menuRef}>
           {isAuthenticated ? (
             <div className="relative">
               <button
@@ -198,6 +215,16 @@ const NavBar = ({ isDesktopCollapsed, setIsDesktopCollapsed, isSidebarOpen, setI
                       </span>
                     )}
                   </div>
+                  {hasAdminAccess() && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full px-4 py-2 text-left text-blue-500 hover:bg-gray-700 rounded-lg flex items-center space-x-2"
+                    >
+                      <LayoutDashboard size={16} />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       logout();

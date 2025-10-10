@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { Trash2, User } from "lucide-react";
 import { usersAPI } from "../services/api";
 import PhoneInputDropdown from "../util/PhoneNumberDropdown";
+import { notifyError, notifySuccess } from "../util/Notifications";
 
 const UserManagement = () => {
   const { isSuperAdmin } = useAuth();
@@ -27,7 +28,7 @@ const UserManagement = () => {
       setError(null);
     } catch (err) {
       console.error(err);
-      setError("Failed to load users.");
+      notifyError("Failed to load users.");
     } finally {
       setLoading(false);
     }
@@ -36,6 +37,7 @@ const UserManagement = () => {
   const handleRoleChange = async (userId, newRole) => {
     try {
       await usersAPI.updateUserRole(userId, newRole);
+      notifySuccess("User role updated successfully");
       fetchUsers(); // refresh list
     } catch (err) {
       console.error(err);
@@ -47,6 +49,7 @@ const UserManagement = () => {
     if (!selectedUser) return;
     try {
       await usersAPI.delete(selectedUser._id);
+      notifySuccess("User deleted successfully");
       setSelectedUser(null);
       fetchUsers();
     } catch (err) {
@@ -64,6 +67,7 @@ const UserManagement = () => {
     setCreating(true);
     try {
       await usersAPI.createAdmin({ name, email, phone }); // assumes API endpoint
+      notifySuccess("User created successfully");
       setShowAddUserModal(false);
       setNewUser({ name: "", email: "", phone: "" });
       fetchUsers();
@@ -97,7 +101,7 @@ const UserManagement = () => {
           searchKeys={["name"]}
           createBtn={[
             {
-              label: "Add User",
+              label: "Add Admin User",
               title: "Create new user",
               onClick: () => setShowAddUserModal(true),
               icon: User,
@@ -178,7 +182,7 @@ const UserManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md text-white">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Add User</h3>
+              <h3 className="text-lg font-bold">Add Admin User</h3>
               <button
                 onClick={() => setShowAddUserModal(false)}
                 className="text-gray-400 hover:text-gray-200"

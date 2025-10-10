@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronUp, ChevronDown, User } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  User,
+  ChevronsLeft ,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight ,
+} from "lucide-react";
+import logo from "../assets/RR_PROP_LOGO.png";
 
 const isMobile = () => typeof window !== "undefined" && window.innerWidth < 768;
 
@@ -129,7 +138,12 @@ function TableUtil({
                         className="h-10 w-10 object-cover rounded"
                       />
                     ) : (
-                      <User className="w-10 h-10 text-muted-foreground dark:text-muted-foreground-dark p-1" />
+                      <img
+                        src={logo}
+                        alt={text || "img"}
+                        className="h-10 w-10 object-cover rounded"
+                      />
+                      // <User className="w-10 h-10 text-muted-foreground dark:text-muted-foreground-dark p-1" />
                     )}
                   </div>
                   <span className="text-sm font-medium truncate">{text}</span>
@@ -220,7 +234,12 @@ function TableUtil({
                 className="h-10 w-10 object-cover rounded"
               />
             ) : (
-              <User className="w-10 h-10 text-muted-foreground dark:text-muted-foreground-dark p-1" />
+              <img
+                src={logo}
+                alt={text || "img"}
+                className="h-10 w-10 object-cover rounded"
+              />
+              // <User className="w-10 h-10 text-muted-foreground dark:text-muted-foreground-dark p-1" />
             )}
           </div>
           <div
@@ -280,24 +299,29 @@ function TableUtil({
             />
           )}
 
-          {createBtn.length > 0 &&
-            createBtn.map((btn, idx) => (
-              <button
-                key={idx}
-                onClick={btn.onClick}
-                className={`px-4 py-2 rounded text-white text-sm ${
-                  btn.btnClass ||
-                  "bg-primary hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
-                } flex items-center justify-center gap-1`}
-                title={btn.title}
-              >
-                {btn.icon && <btn.icon className="w-4 h-4" />}
-                {btn.label}
-              </button>
-            ))}
+          {createBtn.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {createBtn.map((btn, idx) => (
+                <button
+                  key={idx}
+                  onClick={btn.onClick}
+                  className={`flex items-center justify-center gap-1 px-3 py-2 rounded w-full sm:w-auto
+                        text-xs sm:text-sm
+                    ${
+                      btn.btnClass ||
+                      "bg-primary hover:bg-primary/90 dark:bg-primary-dark dark:hover:bg-primary-dark/90"
+                    }
+                  `}
+                  title={btn.title}
+                >
+                  {btn.icon && <btn.icon className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  <span className="truncate">{btn.label}</span>{" "}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
       {/* Table */}
       {mobileView ? (
         <div>
@@ -399,25 +423,31 @@ function TableUtil({
           </table>
         </div>
       )}
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center gap-3 my-3 flex-wrap">
           <div className="flex items-center gap-1 flex-wrap">
+            {/* First Page */}
             <button
-              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50 flex items-center justify-center"
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
+              title="First"
             >
-              First
+              <ChevronsLeft  className="w-4 h-4" />
             </button>
+
+            {/* Previous Page */}
             <button
-              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50 flex items-center justify-center"
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
+              title="Previous"
             >
-              Prev
+              <ChevronLeft className="w-4 h-4" />
             </button>
+
+            {/* Page Numbers */}
             {[...Array(totalPages)].map((_, idx) => (
               <button
                 key={idx}
@@ -431,22 +461,29 @@ function TableUtil({
                 {idx + 1}
               </button>
             ))}
+
+            {/* Next Page */}
             <button
-              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50 flex items-center justify-center"
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
+              title="Next"
             >
-              Next
+              <ChevronRight className="w-4 h-4" />
             </button>
+
+            {/* Last Page */}
             <button
-              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-muted hover:bg-muted/80 dark:bg-muted-dark dark:hover:bg-muted-dark/80 disabled:opacity-50 flex items-center justify-center"
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
+              title="Last"
             >
-              Last
+              <ChevronsRight  className="w-4 h-4" />
             </button>
           </div>
 
+          {/* Rows per page selector */}
           <div className="flex items-center gap-2 mt-2 sm:mt-0">
             <select
               value={rowsPerPage}
@@ -454,7 +491,7 @@ function TableUtil({
                 setRowsPerPage(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="px-2 py-1 rounded bg-muted text-foreground border border-border dark:bg-muted-dark dark:text-foreground-dark dark:border-border-dark"
+              className="px-2 py-1 rounded bg-gray-800 text-foreground border border-border dark:bg-muted-dark dark:text-foreground-dark dark:border-border-dark"
             >
               {[5, 10, 25, 50, 100].map((num) => (
                 <option key={num} value={num}>
