@@ -308,7 +308,7 @@ const Properties = () => {
         )}
 
         {/* Pagination & Rows per Page */}
-        {(!hasAdminAccess() || viewMode === "grid") && (
+        {properties.length > 0 && (!hasAdminAccess() || viewMode === "grid") && (
           <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
             {/* Rows per page - always visible */}
             <div className="flex items-center gap-2 text-gray-300">
