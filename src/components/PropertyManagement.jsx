@@ -737,6 +737,7 @@ const handleView = (property) => {
                         <NeonVideoPlayer
                           key={index}
                           src={URL.createObjectURL(vid)}
+                          fullScreen={false}
                           canEdit={true} // allow replace/delete before upload
                           onDelete={() => removeVideo(index)}
                           onReplace={(file) => replaceVideo(file, index)}

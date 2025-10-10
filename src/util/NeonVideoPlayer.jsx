@@ -158,6 +158,7 @@ const NeonVideoPlayer = ({
     );
   }
 
+  console.log('fullScreen prop:', fullScreen); 
   return (
     <div
       ref={containerRef}
