@@ -127,7 +127,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
             {formatPrice(property.price)}
           </h3>
         </div>
-        <h4 className="text-lg font-semibold text-gray-200 mb-2 line-clamp-2">
+        <h4 className="text-lg font-semibold text-gray-200 mb-2 truncate">
           {property.title}
         </h4>
         <div className="flex items-center text-gray-400 mb-3">
