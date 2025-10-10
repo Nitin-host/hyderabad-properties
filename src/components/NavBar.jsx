@@ -93,7 +93,7 @@ const NavBar = ({
                     <div className="px-4 py-2 border-b border-gray-700">
                       <p className="text-sm text-gray-300">{user.name}</p>
                       <p className="text-xs text-gray-400">{user.email}</p>
-                      {user.role && (
+                      {hasAdminAccess() &&user.role && (
                         <span
                           className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
                             isSuperAdmin()
@@ -118,7 +118,8 @@ const NavBar = ({
                       </Link>
                     )}
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         logout();
                         setShowUserMenu(false);
                       }}
@@ -201,7 +202,7 @@ const NavBar = ({
                   <div className="px-4 py-2 border-b border-gray-700">
                     <p className="text-sm text-gray-300">{user.name}</p>
                     <p className="text-xs text-gray-400">{user.email}</p>
-                    {user.role && (
+                    {hasAdminAccess() && user.role && (
                       <span
                         className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
                           isSuperAdmin()
@@ -226,7 +227,8 @@ const NavBar = ({
                     </Link>
                   )}
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       logout();
                       setShowUserMenu(false);
                     }}
