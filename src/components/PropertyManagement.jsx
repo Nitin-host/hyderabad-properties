@@ -5,6 +5,9 @@ import DynamicForm from "./DynamicForm";
 import { formHelpers } from "../config/propertyFormConfig";
 import TableUtil from "../util/TableUtil";
 import { useLocation } from "react-router-dom";
+import NeonVideoPlayer from "../util/NeonVideoPlayer";
+import { useAuth } from "../context/AuthContext";
+import { notifyError, notifySuccess } from "../util/Notifications";
 
 const PropertyManagement = ({
   properties: propProperties,
@@ -31,6 +34,7 @@ const PropertyManagement = ({
   const [showDeleted, setShowDeleted] = useState(false); // ✅ NEW
   const [viewingProperty, setViewingProperty] = useState(null);
   const location = useLocation();
+  const {user} = useAuth();
 
   // Fetch properties if not provided as props
   useEffect(() => {
@@ -83,15 +87,24 @@ const PropertyManagement = ({
     try {
       const res = await propertiesAPI.createProperty(propertyData);
       if (res.success) {
-        await handleMediaUpload(res.data._id); // upload media if needed
+        const propertyId = res.data._id;
+         try {
+           await handleMediaUpload(propertyId); // Upload images/videos
+         } catch (mediaErr) {
+           notifyError("Failed to upload images or videos");
+           setShowForm(false); // Close modal
+           return { success: false };
+         }
         await fetchProperties();
         if (refreshProperties) await refreshProperties();
+        notifySuccess(res.message || "Property added successfully");
         return { success: true, data: res.data };
       }
       return { success: false, error: res.message };
     } catch (err) {
       console.error(err);
-      return { success: false, error: err.message };
+      notifyError(err.data?.errors || err.message || "Failed to add property");
+      return { success: false, error: err.data?.errors || err.message };
     }
   };
 
@@ -136,12 +149,14 @@ const PropertyManagement = ({
       const res = await propertiesAPI.updateProperty(id, formDataObj);
       if (res.success) {
         await fetchProperties();
+        notifySuccess(res.message || "Property updated successfully");
         if (refreshProperties) await refreshProperties();
         return { success: true, data: res.data };
       }
       return { success: false, error: res.message };
     } catch (err) {
       console.error(err);
+      notifyError(err.data?.errors || err.message || "Failed to update property");
       return { success: false, error: err.message };
     }
   };
@@ -150,6 +165,7 @@ const PropertyManagement = ({
     try {
       const response = await propertiesAPI.deleteProperty(id);
       if (response.success) {
+        notifySuccess(response.message || "Property deleted successfully");
         if (refreshProperties) await refreshProperties();
         return { success: true };
       }
@@ -159,6 +175,7 @@ const PropertyManagement = ({
       };
     } catch (err) {
       console.error(err);
+      notifyError(err.message || "An error occurred while deleting property");
       return {
         success: false,
         error: err.message || "An error occurred while deleting property",
@@ -193,8 +210,7 @@ const PropertyManagement = ({
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
-    if (!file || !file.type.startsWith("video/")) return;
-    setVideos([file]);
+    if (file) setVideos((prev) => [...prev, file]);
   };
 
   const removeExistingImage = (imageKey, index) => {
@@ -235,6 +251,10 @@ const PropertyManagement = ({
       )
     );
   };
+  
+  const replaceVideo = (file, index) => {
+    setVideos((prev) => prev.map((v, i) => (i === index ? file : v)));
+  };
 
   const handleReplaceVideo = (e, oldKey) => {
     const file = e.target.files[0];
@@ -251,12 +271,14 @@ const PropertyManagement = ({
     if (images.length > 0) {
       const imageForm = new FormData();
       images.forEach((img) => imageForm.append("images", img));
-      await propertiesAPI.uploadImages(propertyId, imageForm);
+       const res = await propertiesAPI.uploadImages(propertyId, imageForm);
+       if (!res.success) throw new Error("Image upload failed");
     }
     if (videos.length > 0) {
       const videoForm = new FormData();
       videos.forEach((v) => videoForm.append("videos", v));
-      await propertiesAPI.uploadVideos(propertyId, videoForm);
+      const res = await propertiesAPI.uploadVideos(propertyId, videoForm);
+      if (!res.success) throw new Error("Video upload failed");
     }
   };
 
@@ -306,45 +328,61 @@ const PropertyManagement = ({
     return amenityKeys.includes(key);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+ const handleSubmit = async (e) => {
+   e.preventDefault();
 
-    setIsSubmitting(true);
-    setErrors({});
+   // Frontend validation first
+   if (!validateForm()) return;
 
-    try {
-      const amenitiesList = Array.isArray(formData.amenities)
-        ? formData.amenities
-        : [];
+   setIsSubmitting(true);
+   setErrors({});
 
-      // Prepare property data
-      const propertyData = {
-        ...formData,
-        amenities: amenitiesList, // ensure it's an array
-      };
+   try {
+     const amenitiesList = Array.isArray(formData.amenities)
+       ? formData.amenities
+       : [];
 
-      if (editingProperty) {
-        const result = await handleUpdateProperty(
-          editingProperty._id,
-          propertyData
-        );
-        if (!result.success) throw new Error(result.error);
-      } else {
-        const result = await handleAddProperty(propertyData);
-        if (!result.success) throw new Error(result.error);
-      }
+     const propertyData = {
+       ...formData,
+       amenities: amenitiesList, // ensure array
+     };
 
-      fetchProperties();
-      setShowForm(false);
-      resetForm();
-    } catch (error) {
-      console.error(error);
-      setErrors({ submit: error.message || "Failed to save property" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+     let result;
+     if (editingProperty) {
+       result = await handleUpdateProperty(editingProperty._id, propertyData);
+     } else {
+       result = await handleAddProperty(propertyData);
+     }
+
+     if (!result.success) throw result;
+
+     // Success: refresh and reset
+     await fetchProperties();
+     setShowForm(false);
+     resetForm();
+   } catch (error) {
+     console.log(error);
+
+     // Field-level errors from API
+     if (error?.error && Array.isArray(error.error)) {
+       const fieldErrors = {};
+       error.error.forEach((err) => {
+         fieldErrors[err.field] = err.message;
+       });
+       setErrors(fieldErrors);
+     }
+     // General error
+     else if (error.message) {
+       setErrors({ submit: error.message });
+     }
+     // Fallback
+     else {
+       setErrors({ submit: "Failed to save property" });
+     }
+   } finally {
+     setIsSubmitting(false);
+   }
+ };
 
   const handleEdit = (property) => {
     setEditingProperty(property);
@@ -645,76 +683,64 @@ const handleView = (property) => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Videos
                   </label>
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-4">
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleVideoUpload}
-                      className="hidden"
-                      id="video-upload"
-                    />
-                    <label
-                      htmlFor="video-upload"
-                      className="flex flex-col items-center justify-center cursor-pointer"
-                    >
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" /> Click to
-                      upload video
-                    </label>
-                  </div>
 
-                  {/* Existing Videos with Replace */}
+                  {/* Show upload UI only if there is no existing video */}
+                  {existingVideos.length === 0 && (
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoUpload} // handleVideoUpload should add to videos array
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label
+                        htmlFor="video-upload"
+                        className="flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        Click to upload video
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Existing Videos with NeonVideoPlayer */}
                   {existingVideos.length > 0 && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {existingVideos.map((video, index) => (
-                        <div key={index} className="relative">
-                          <video
-                            src={video.preview || video.presignUrl}
-                            controls
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <label className="absolute bottom-1 left-1 bg-blue-600 text-white rounded px-2 py-1 cursor-pointer">
-                            Replace
-                            <input
-                              type="file"
-                              accept="video/*"
-                              className="hidden"
-                              onChange={(e) =>
-                                handleReplaceVideo(e, video.key || video.id)
-                              }
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeExistingVideo(video.key || video.id, index)
-                            }
-                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                        <NeonVideoPlayer
+                          key={video.key || video.id || index}
+                          src={video.presignUrl}
+                          fullScreen={false}
+                          canEdit={
+                            user?.role === "admin" ||
+                            user?.role === "super_admin"
+                          }
+                          onReplace={(file) =>
+                            handleReplaceVideo(
+                              { target: { files: [file] } },
+                              video.key || video.id
+                            )
+                          }
+                          onDelete={() =>
+                            removeExistingVideo(video.key || video.id, index)
+                          }
+                        />
                       ))}
                     </div>
                   )}
 
-                  {/* New Videos Preview */}
+                  {/* New Videos Preview (before upload) */}
                   {videos.length > 0 && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {videos.map((vid, index) => (
-                        <div key={index} className="relative">
-                          <video
-                            src={URL.createObjectURL(vid)}
-                            controls
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeVideo(index)}
-                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                        <NeonVideoPlayer
+                          key={index}
+                          src={URL.createObjectURL(vid)}
+                          canEdit={true} // allow replace/delete before upload
+                          onDelete={() => removeVideo(index)}
+                          onReplace={(file) => replaceVideo(file, index)}
+                        />
                       ))}
                     </div>
                   )}
@@ -831,16 +857,12 @@ const handleView = (property) => {
                   </h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {viewingProperty.videos.map((vid, idx) => (
-                      <div
+                      <NeonVideoPlayer
                         key={idx}
-                        className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300"
-                      >
-                        <video
-                          src={vid.presignUrl || vid.preview}
-                          controls
-                          className="w-full h-36 md:h-48 object-cover rounded-lg"
-                        />
-                      </div>
+                        src={vid.presignUrl || vid.preview}
+                        fullScreen={false}
+                        canEdit={false}
+                      />
                     ))}
                   </div>
                 </div>

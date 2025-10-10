@@ -255,12 +255,14 @@ const Properties = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center">
             {/* Column 1: Header and count */}
             <div className="col-span-1 lg:col-span-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                Properties in Kondapur-HYD{" "}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                  Properties in Kondapur-HYD
+                </h1>
                 <span className="text-lg font-normal text-gray-400">
                   ({filteredProperties.length})
                 </span>
-              </h1>
+              </div>
               <p className="text-gray-400 mt-1 text-sm sm:text-base">
                 Discover your dream property from our extensive collection
               </p>

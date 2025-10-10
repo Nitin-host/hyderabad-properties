@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { notifyError } from '../util/Notifications';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -40,15 +41,19 @@ api.interceptors.response.use(
           // Don't automatically clear tokens here - let AuthContext handle it
           // This allows for proper refresh token logic
           console.log('401 Unauthorized - Token may be expired');
+          notifyError('Session expired. Please log in again.');
           break;
         case 403:
           console.error('Access forbidden');
+          notifyError('You do not have permission to access this resource.');
           break;
         case 404:
           console.error('Resource not found');
+          notifyError('The requested resource was not found.');
           break;
         case 500:
           console.error('Server error');
+          notifyError('An internal server error occurred.');
           break;
         default:
           console.error('API Error:', data?.message || 'Unknown error');
@@ -70,6 +75,7 @@ api.interceptors.response.use(
     } else {
       // Something else happened
       console.error('Error:', error.message);
+      notifyError(error.message);
       return Promise.reject({
         status: 0,
         message: error.message,
@@ -82,9 +88,11 @@ api.interceptors.response.use(
 // API endpoints
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
-  verifyOtp: (userData)=> api.post('/auth/verify-otp', userData),
-  
+  verifyAdminOtp: (userData)=> api.post('/auth/verify-admin-otp', userData),
+  forgotPassword: (email) => api.post("/auth/forgot-password",  email ),
+  verifyForgotOtp: (data) => api.post("/auth/verify-forgot-otp", data),
   register: (userData) => api.post("/auth/register", userData),
+  resetPassword: (data) => api.post("/auth/reset-password", data),
   logout: () => api.post("/auth/logout"),
   refreshToken: () => api.post("/auth/refresh"),
   getProfile: () => api.get("/auth/profile"),

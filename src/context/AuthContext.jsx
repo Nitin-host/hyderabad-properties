@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { authAPI } from "../services/api";
+import { notifyError, notifySuccess } from "../util/Notifications";
 
 const AuthContext = createContext();
 
@@ -93,6 +94,15 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
+      if (response.success && response.mustChangePassword) {
+        return {
+          success: true,
+          mustChangePassword: true,
+          user: response.data.user,
+          message: response.message,
+        };
+      }
+
       // 🟢 Case 2: Normal login
       if (response.success && response.data?.token) {
         localStorage.setItem("authToken", response.data.token);
@@ -101,6 +111,7 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.setItem("user", JSON.stringify(response.data.user));
         setUser(response.data.user);
+        notifySuccess("Login successful");
         return { success: true };
       }
 
@@ -119,10 +130,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   // 🟢 New: Verify OTP for super_admin
-  const verifyOtp = async (email, otp) => {
+  const verifyAdminOtp = async (email, otp) => {
     setIsLoading(true);
     try {
-      const response = await authAPI.verifyOtp({ email, otp });
+      const response = await authAPI.verifyAdminOtp({ email, otp });
 
       if (response.success && response.data?.token) {
         localStorage.setItem("authToken", response.data.token);
@@ -152,7 +163,14 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     try {
       const response = await authAPI.forgotPassword({ email });
-      return response;
+      if (response.success) {
+        return {
+          success: true,
+          message:
+            response.message ||
+            "OTP sent to your email. Please verify to reset password.",
+        };
+      }
     } catch (error) {
       return {
         success: false,
@@ -161,12 +179,46 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🟢 Reset Password
-  const resetPassword = async (token, newPassword) => {
+  // 🟢 Verify Forgot Password OTP
+  const verifyForgotOtp = async (email, otp) => {
+    setIsLoading(true);
     try {
-      const response = await authAPI.resetPassword(token, {
-        password: newPassword,
-      });
+      const response = await authAPI.verifyForgotOtp({ email, otp });
+      if (response.success) {
+        return {
+          success: true,
+          message: response.message || "OTP verified.",
+        };
+      }
+
+      if (response.success && response.data?.token) {
+        localStorage.setItem("authToken", response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        setUser(response.data.user);
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: response.message || "OTP verification failed",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || "OTP verification failed. Please try again.",
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 🟢 Reset Password
+  const resetPassword = async (userData) => {
+    try {
+      const response = await authAPI.resetPassword(userData);
       return response;
     } catch (error) {
       return {
@@ -208,8 +260,10 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authAPI.logout();
+      notifySuccess("Logged out successfully.");
     } catch (error) {
       console.error("Logout error:", error);
+      notifyError("Error during logout. Please try again.");
     } finally {
       setUser(null);
       localStorage.removeItem("authToken");
@@ -222,7 +276,7 @@ export const AuthProvider = ({ children }) => {
     user,
     isLoading,
     login,
-    verifyOtp,
+    verifyAdminOtp,
     forgotPassword,
     resetPassword,
     register,
@@ -231,6 +285,7 @@ export const AuthProvider = ({ children }) => {
     hasAdminAccess,
     canManageProperties,
     isSuperAdmin,
+    verifyForgotOtp,
     userRole: user?.role || "user",
   };
 

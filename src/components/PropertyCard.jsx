@@ -44,8 +44,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
 
   const currentImage =
     property.images && property.images.length > 0
-      ? property.images[currentImageIndex]?.cloudinaryUrl ||
-        property.images[currentImageIndex]?.presignUrl?.replace(/`/g, "").trim()
+      ? property.images[currentImageIndex]?.presignUrl
       : "";
 
   const isSold = property.status.toLowerCase() === "sold" || property.status.toLowerCase() === "occupied" || property.status.toLowerCase() === "rented";

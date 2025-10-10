@@ -7,6 +7,7 @@ import PropertyShare from './PropertyShare';
 import StickyWhatsApp from './StickyWhatsApp.jsx';
 import logo from '../assets/RR_PROP_LOGO.png'
 import { Play } from 'lucide-react';
+import NeonVideoPlayer from '../util/NeonVideoPlayer.jsx';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams();
@@ -22,6 +23,30 @@ const PropertyDetailsPage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isImageModalOpen) return;
+
+      if (e.key === "ArrowLeft") {
+        setModalImageIndex(
+          (prev) => (prev - 1 + property.images.length) % property.images.length
+        );
+      } else if (e.key === "ArrowRight") {
+        setModalImageIndex((prev) => (prev + 1) % property.images.length);
+      } else if (e.key === "Escape") {
+        setIsImageModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isImageModalOpen, property?.images]);
+
 
 
   const openImageModal = (index) => {
@@ -289,7 +314,7 @@ const PropertyDetailsPage = () => {
 
                     {/* Image */}
                     <img
-                      src={property.images[modalImageIndex]?.presignUrl || logo }
+                      src={property.images[modalImageIndex]?.presignUrl || logo}
                       alt="Expanded"
                       className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
                     />
@@ -341,6 +366,14 @@ const PropertyDetailsPage = () => {
                     ))}
                   </div>
                 )}
+                {(!Array.isArray(property.images) ||
+                  property.images.length === 0) && (
+                  <img
+                    src={logo}
+                    alt="No Images"
+                    className="w-full h-96 object-contain rounded-lg"
+                  />
+                )}
               </div>
             )}
 
@@ -355,7 +388,7 @@ const PropertyDetailsPage = () => {
                       onClick={() => setIsVideoPlaying(true)}
                     >
                       <img
-                        src={property.videos[0]?.thumbnail || logo }
+                        src={property.videos[0]?.thumbnail || logo}
                         alt="Video Thumbnail"
                         className="w-full h-full object-cover"
                       />
@@ -364,13 +397,18 @@ const PropertyDetailsPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <video
+                    // <video
+                    //   src={property.videos[0]?.presignUrl || logo}
+                    //   controls
+                    //   autoPlay
+                    //   controlsList="nodownload noplaybackrate"
+                    //   disablePictureInPicture
+                    //   className="w-full h-full object-cover"
+                    // />
+                    <NeonVideoPlayer
                       src={property.videos[0]?.presignUrl || logo}
-                      controls
-                      autoPlay
-                      controlsList="nodownload noplaybackrate"
-                      disablePictureInPicture
-                      className="w-full h-full object-cover"
+                      // poster={property.videos[0]?.thumbnail || logo}
+                      autoPlay={true}
                     />
                   )}
                 </div>
@@ -502,15 +540,12 @@ const PropertyDetailsPage = () => {
                           </p>
                         </div>
                       )}
-
-                      {property.maintenance && (
-                        <div>
-                          <p className="text-xs text-gray-400">Maintenance</p>
-                          <p className="font-medium text-sm">
-                            ₹{property.maintenance}
-                          </p>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-xs text-gray-400">Maintenance</p>
+                        <p className="font-medium text-sm">
+                          ₹{property.maintenance}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -608,7 +643,7 @@ const PropertyDetailsPage = () => {
                     <h3 className="font-semibold mb-3 text-white text-sm">
                       Location Details
                     </h3>
-                    <div className="d-flex flex-col space-y-2 mb-4">
+                    <div className="flex flex-row space-x-6 mb-4">
                       <div>
                         <p className="text-xs text-gray-400">Address</p>
                         <p className="font-medium text-xs">
@@ -624,7 +659,6 @@ const PropertyDetailsPage = () => {
                         </div>
                       )}
                     </div>
-
                     {/* Agent Information */}
                     {property.agent && (
                       <div>
@@ -643,7 +677,12 @@ const PropertyDetailsPage = () => {
                               Email:
                             </span>
                             <span className="font-medium text-xs">
-                              {property.agent.email}
+                              <a
+                                href={`mailto:${property.agent.email}`}
+                                className="ml-1 transition-colors hover:underline"
+                              >
+                                {property.agent.email}
+                              </a>
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -651,7 +690,12 @@ const PropertyDetailsPage = () => {
                               Phone:
                             </span>
                             <span className="font-medium text-xs">
-                              {property.agent.phone}
+                              <a
+                                href={`tel:${property.agent.phone}`}
+                                className="hover:underline transition-colors"
+                              >
+                                {property.agent.phone}
+                              </a>
                             </span>
                           </div>
                           <div className="flex justify-between">

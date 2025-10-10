@@ -1,51 +1,52 @@
-import React from 'react';
-import { propertyFormConfig, formHelpers } from '../config/propertyFormConfig';
-import CustomDatePicker from '../util/CustomDatePicker';
+import React from "react";
+import { propertyFormConfig, formHelpers } from "../config/propertyFormConfig";
+import CustomDatePicker from "../util/CustomDatePicker";
 
 const DynamicForm = ({ formData, onChange, errors = {} }) => {
   const { sections, styles } = propertyFormConfig;
   const handleInputChange = (e, section) => {
     const { name, value, type, checked } = e.target;
 
-   if (type === "checkbox") {
-     const key = section || name; // use section as key, fallback to field name
-     const updatedArray = [...(formData[key] || [])];
+    // Checkbox handling
+    if (type === "checkbox") {
+      const key = section || name;
+      const updatedArray = [...(formData[key] || [])];
+      if (checked && !updatedArray.includes(name)) updatedArray.push(name);
+      else if (!checked && updatedArray.includes(name)) {
+        updatedArray.splice(updatedArray.indexOf(name), 1);
+      }
+      onChange({ ...formData, [key]: updatedArray });
+      return;
+    }
 
-     if (checked && !updatedArray.includes(name)) updatedArray.push(name);
-     else if (!checked && updatedArray.includes(name)) {
-       updatedArray.splice(updatedArray.indexOf(name), 1);
-     }
+    // Radio-date
+    if (type === "radio-date") {
+      onChange({ ...formData, [name]: value });
+      return;
+    }
 
-     onChange({ ...formData, [key]: updatedArray });
-     return;
-   } else if (type === "radio-date") {
-     onChange({
-       ...formData,
-       [name]: value,
-     });
-   } else {
-     // Handle nested field names (e.g., address.street)
-     if (name.includes(".")) {
-       const [parent, child] = name.split(".");
-       const newFormData = {
-         ...formData,
-         [parent]: {
-           ...formData[parent],
-           [child]: value,
-         },
-       };
-       onChange(newFormData);
-     } else {
-       let processedValue = value;
-       if (value === "true") processedValue = true;
-       if (value === "false") processedValue = false;
+    // Nested field handling
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      onChange({
+        ...formData,
+        [parent]: { ...formData[parent], [child]: value },
+      });
+    } else {
+      let processedValue =
+        value === "true" ? true : value === "false" ? false : value;
+      onChange({ ...formData, [name]: processedValue });
+    }
+  };
 
-       onChange({
-         ...formData,
-         [name]: processedValue,
-       });
-     }
-   }
+  const getFieldValue = (fieldName) => {
+    if (fieldName.includes(".")) {
+      const [parent, child] = fieldName.split(".");
+      const value = formData[parent]?.[child];
+      return value !== undefined && value !== null ? value : "";
+    }
+    const value = formData[fieldName];
+    return value !== undefined && value !== null ? value : "";
   };
 
   const renderField = (field) => {
@@ -60,21 +61,33 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
       colSpan,
       section,
     } = field;
-
-    const fieldClasses = colSpan === 2 ? `${styles.fieldContainer} ${styles.colSpan2}` : styles.fieldContainer;
-    const isRequired = required ? ' *' : '';
-    
-    // Get field value, handling nested fields
-    const getFieldValue = (fieldName) => {
-      if (fieldName.includes('.')) {
-        const [parent, child] = fieldName.split('.');
-        return formData[parent]?.[child] || '';
-      }
-      return formData[fieldName] || '';
-    };
+    const fieldClasses =
+      colSpan === 2
+        ? `${styles.fieldContainer} ${styles.colSpan2}`
+        : styles.fieldContainer;
+    const isRequired = required ? " *" : "";
+    const fieldError = errors[name];
 
     switch (type) {
       case "text":
+        return (
+          <div key={name} className={fieldClasses}>
+            <label className={styles.label}>
+              {label}
+              {isRequired}
+            </label>
+            <input
+              type="text"
+              name={name}
+              value={getFieldValue(name)}
+              onChange={handleInputChange}
+              className={styles.input}
+              placeholder={placeholder}
+            />
+            {fieldError && <p className={styles.error}>{fieldError}</p>}
+          </div>
+        );
+
       case "number":
         return (
           <div key={name} className={fieldClasses}>
@@ -83,14 +96,25 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
               {isRequired}
             </label>
             <input
-              type={type}
+              type="text"
               name={name}
-              value={getFieldValue(name)}
-              onChange={handleInputChange}
-              className={styles.input}
+              value={
+                getFieldValue(name) !== "" && getFieldValue(name) !== null
+                  ? Number(getFieldValue(name)).toLocaleString()
+                  : ""
+              }
               placeholder={placeholder}
+              className={styles.input}
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/\D/g, "");
+                onChange({ ...formData, [name]: rawValue });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowUp" || e.key === "ArrowDown")
+                  e.preventDefault();
+              }}
             />
-            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
+            {fieldError && <p className={styles.error}>{fieldError}</p>}
           </div>
         );
 
@@ -109,7 +133,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
               className={styles.textarea}
               placeholder={placeholder}
             />
-            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
+            {fieldError && <p className={styles.error}>{fieldError}</p>}
           </div>
         );
 
@@ -133,7 +157,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
                 </option>
               ))}
             </select>
-            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
+            {fieldError && <p className={styles.error}>{fieldError}</p>}
           </div>
         );
 
@@ -153,6 +177,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
             </label>
           </div>
         );
+
       case "radio-date":
         return (
           <div key={name} className={fieldClasses}>
@@ -175,8 +200,6 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
                 </label>
               ))}
             </div>
-
-            {/* Show calendar only if "date" is chosen */}
             {formData[name] === "date" && (
               <div className="mt-2">
                 <CustomDatePicker
@@ -184,19 +207,11 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
                   onChange={(date) =>
                     onChange({ ...formData, availabilityDate: date })
                   }
-                  minDate={new Date()} // today onwards
+                  minDate={new Date()}
                 />
-                {/* <input
-                  type="date"
-                  name="availabilityDate"
-                  value={formatDateForInput(formData.availabilityDate || "")}
-                  onChange={handleInputChange}
-                  className={styles.input}
-                  min={new Date().toISOString().split("T")[0]} // today onwards
-                /> */}
               </div>
             )}
-            {errors[name] && <p className={styles.error}>{errors[name]}</p>}
+            {fieldError && <p className={styles.error}>{fieldError}</p>}
           </div>
         );
 
@@ -229,11 +244,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
     );
   };
 
-  return (
-    <div className={styles.container}>
-      {sections.map(renderSection)}
-    </div>
-  );
+  return <div className={styles.container}>{sections.map(renderSection)}</div>;
 };
 
 export default DynamicForm;
