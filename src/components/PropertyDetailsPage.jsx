@@ -692,7 +692,7 @@ const PropertyDetailsPage = () => {
                             <span className="font-medium text-xs">
                               <a
                                 href={`tel:${property.agent.phone}`}
-                                className="hover:underline transition-colors"
+                                className="hover:underline text-blue-400"
                               >
                                 {property.agent.phone}
                               </a>

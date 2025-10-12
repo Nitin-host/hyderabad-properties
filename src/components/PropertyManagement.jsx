@@ -7,7 +7,8 @@ import TableUtil from "../util/TableUtil";
 import { useLocation } from "react-router-dom";
 import NeonVideoPlayer from "../util/NeonVideoPlayer";
 import { useAuth } from "../context/AuthContext";
-import { notifyError, notifySuccess } from "../util/Notifications";
+import { notifyError, notifySuccess, notifyWarning } from "../util/Notifications";
+
 
 const PropertyManagement = ({
   properties: propProperties,
@@ -30,18 +31,19 @@ const PropertyManagement = ({
   const [properties, setProperties] = useState(propProperties || []);
   const [loading, setLoading] = useState(!propProperties);
   const [error, setError] = useState(null);
-  const [deletedProperties, setDeletedProperties] = useState([]); // ✅ NEW
-  const [showDeleted, setShowDeleted] = useState(false); // ✅ NEW
+  const [deletedProperties, setDeletedProperties] = useState([]);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [viewingProperty, setViewingProperty] = useState(null);
   const location = useLocation();
-  const {user} = useAuth();
+  const { user } = useAuth();
 
-  // Fetch properties if not provided as props
+
+  // Initial table load only
   useEffect(() => {
-    if (!propProperties) fetchProperties();
+    if (!propProperties) fetchProperties(true);
   }, [propProperties]);
 
-  // Set form data when editing property
+
   useEffect(() => {
     if (editingProperty) {
       setFormData(formHelpers.getInitialFormData(editingProperty));
@@ -55,19 +57,32 @@ const PropertyManagement = ({
     }
   }, [editingProperty]);
 
-  const fetchProperties = async () => {
-    setLoading(true);
+
+  // Fetch all (only uses spinner if loading=true)
+  const fetchProperties = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const response = await propertiesAPI.getAll();
       setProperties(response.data || []);
       setError(null);
     } catch (err) {
       setError("Failed to load properties. Please try again.");
-      console.error(err);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
+
+
+  const fetchDeletedProperties = async () => {
+    try {
+      const response = await propertiesAPI.getDeleted();
+      setDeletedProperties(response.data || []);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load deleted properties. Please try again.");
+    }
+  };
+
 
   const resetForm = () => {
     setFormData(formHelpers.getInitialFormData());
@@ -83,128 +98,151 @@ const PropertyManagement = ({
     setShowForm(false);
   };
 
+
   const handleAddProperty = async (propertyData) => {
     try {
       const res = await propertiesAPI.createProperty(propertyData);
       if (res.success) {
         const propertyId = res.data._id;
-         try {
-           await handleMediaUpload(propertyId); // Upload images/videos
-         } catch (mediaErr) {
-           notifyError("Failed to upload images or videos");
-           setShowForm(false); // Close modal
-           return { success: false };
-         }
-        await fetchProperties();
-        if (refreshProperties) await refreshProperties();
+        try {
+          await handleMediaUpload(propertyId);
+        } catch {
+          notifyError("Failed to upload images or videos");
+          setShowForm(false);
+          return { success: false };
+        }
+        setProperties(prev => [res.data, ...prev]);
         notifySuccess(res.message || "Property added successfully");
+        fetchProperties(); // Update in background in case of backend changes
+        if (refreshProperties) refreshProperties();
         return { success: true, data: res.data };
       }
       return { success: false, error: res.message };
     } catch (err) {
-      console.error(err);
-      notifyError(err.data?.errors || err.message || "Failed to add property");
-      return { success: false, error: err.data?.errors || err.message };
+      notifyError(err.message || "Failed to add property");
+      resetForm();
+      return { success: false, error: err.message };
     }
   };
+
 
   const handleUpdateProperty = async (id, propertyData) => {
     try {
       const formDataObj = new FormData();
-
       Object.entries(propertyData).forEach(([key, value]) => {
-        if (Array.isArray(value))
-          formDataObj.append(key, JSON.stringify(value));
+        if (Array.isArray(value)) formDataObj.append(key, JSON.stringify(value));
         else formDataObj.append(key, value ?? "");
       });
-
-      // Removed media
       if (removedImages.length > 0)
         formDataObj.append("removedImages", JSON.stringify(removedImages));
       if (removedVideos.length > 0)
         formDataObj.append("removedVideos", JSON.stringify(removedVideos));
-
-      // Replace media
       if (Object.keys(replaceMap).length > 0) {
         const mapPayload = {};
-
         Object.entries(replaceMap).forEach(([oldKey, file]) => {
-          // Instead of replaceMapFiles → send them into images/videos depending on type
           if (file.type.startsWith("image/")) {
             formDataObj.append("images", file);
           } else if (file.type.startsWith("video/")) {
             formDataObj.append("videos", file);
           }
-
           mapPayload[oldKey] = file.name;
         });
-
         formDataObj.append("replaceMap", JSON.stringify(mapPayload));
       }
+      images.forEach(img => formDataObj.append("images", img));
+      videos.forEach(v => formDataObj.append("videos", v));
 
-      // New uploads
-      images.forEach((img) => formDataObj.append("images", img));
-      videos.forEach((vid) => formDataObj.append("videos", vid));
 
       const res = await propertiesAPI.updateProperty(id, formDataObj);
       if (res.success) {
-        await fetchProperties();
+        setProperties(prev =>
+          prev.map(prop => (prop._id === id ? { ...res.data } : prop))
+        );
         notifySuccess(res.message || "Property updated successfully");
-        if (refreshProperties) await refreshProperties();
+        fetchProperties(); // background sync
+        if (refreshProperties) refreshProperties();
         return { success: true, data: res.data };
       }
       return { success: false, error: res.message };
     } catch (err) {
-      console.error(err);
-      notifyError(err.data?.errors || err.message || "Failed to update property");
+      notifyError(err.message || "Failed to update property");
+      resetForm();
       return { success: false, error: err.message };
     }
   };
+
 
   const handleDeleteProperty = async (id) => {
     try {
       const response = await propertiesAPI.deleteProperty(id);
       if (response.success) {
+        setProperties(prev => prev.filter(prop => prop._id !== id));
+        fetchProperties(); // background sync
+        if (refreshProperties) refreshProperties();
         notifySuccess(response.message || "Property deleted successfully");
-        if (refreshProperties) await refreshProperties();
         return { success: true };
       }
-      return {
-        success: false,
-        error: response.message || "Failed to delete property",
-      };
+      return { success: false, error: response.message };
     } catch (err) {
-      console.error(err);
       notifyError(err.message || "An error occurred while deleting property");
-      return {
-        success: false,
-        error: err.message || "An error occurred while deleting property",
-      };
+      return { success: false, error: err.message };
     }
   };
 
-  // Fetch deleted properties
-  const fetchDeletedProperties = async () => {
-    setLoading(true);
+
+  const handleDelete = async (propertyId) => {
+    if (window.confirm("Are you sure you want to delete this property?")) {
+      const result = await handleDeleteProperty(propertyId);
+      if (!result.success) alert(result.error || "Failed to delete property");
+    }
+  };
+
+
+  const PermanentlyDelete = async (id) => {
+    if (window.confirm("Are you sure you want to permanently delete this property?")) {
+      try {
+        const result = await propertiesAPI.permanentlyDeleteProperty(id);
+        if (result.success) {
+          setDeletedProperties(prev => prev.filter(prop => prop._id !== id));
+          notifySuccess(result.message || "Property permanently deleted");
+          fetchDeletedProperties();
+        }
+        if (!result.success) throw new Error(result.error);
+      } catch (error) {
+        notifyError(error.message || "Failed to permanently delete property");
+        alert(error.message || "Failed to permanently delete property");
+      }
+    }
+  };
+
+
+  const handleRestoreProperty = async (id) => {
     try {
-      const response = await propertiesAPI.getDeleted();
-      const data = response.data || [];
-      setDeletedProperties(data);
-      setError(null);
+      const response = await propertiesAPI.restoreProperty(id);
+      if (response.success) {
+        setDeletedProperties(prev => prev.filter(prop => prop._id !== id));
+        fetchDeletedProperties();
+        fetchProperties();
+        notifySuccess(response.message || "Property restored successfully");
+        if (refreshProperties) refreshProperties();
+        return { success: true };
+      }
+      return { success: false, error: response.message };
     } catch (err) {
-      setError("Failed to load deleted properties. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
+      notifyError(err.message || "An error occurred while restoring property");
+      return { success: false, error: err.message };
     }
   };
 
-  // --- Media Handling ---
+  // --- Media Handling --- (same logic as your original)
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter(
-      (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024
+      (file) => file.type.startsWith("image/") && file.size <= 15 * 1024 * 1024
     );
+    if (validFiles.length < files.length) {
+      notifyWarning("Image files must be less than 15MB.");
+    }
     setImages((prev) => [...prev, ...validFiles]);
   };
 
@@ -216,7 +254,6 @@ const PropertyManagement = ({
   const removeExistingImage = (imageKey, index) => {
     if (imageKey) setRemovedImages((prev) => [...prev, imageKey]);
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
-    // Remove from replaceMap if exists
     setReplaceMap((prev) => {
       const newMap = { ...prev };
       delete newMap[imageKey];
@@ -251,7 +288,7 @@ const PropertyManagement = ({
       )
     );
   };
-  
+
   const replaceVideo = (file, index) => {
     setVideos((prev) => prev.map((v, i) => (i === index ? file : v)));
   };
@@ -271,8 +308,8 @@ const PropertyManagement = ({
     if (images.length > 0) {
       const imageForm = new FormData();
       images.forEach((img) => imageForm.append("images", img));
-       const res = await propertiesAPI.uploadImages(propertyId, imageForm);
-       if (!res.success) throw new Error("Image upload failed");
+      const res = await propertiesAPI.uploadImages(propertyId, imageForm);
+      if (!res.success) throw new Error("Image upload failed");
     }
     if (videos.length > 0) {
       const videoForm = new FormData();
@@ -282,163 +319,58 @@ const PropertyManagement = ({
     }
   };
 
-  // --- Form Handling ---
   const validateForm = () => {
     const newErrors = formHelpers.validateForm(formData);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const isAmenity = (key) => {
-    const amenityKeys = [
-      "clubhouseGym",
-      "school",
-      "hospital",
-      "mall",
-      "park",
-      "balcony",
-      "petFriendly",
-      "cupBoard",
-      "lift",
-      "wifi",
-      "ac",
-      "gym",
-      "swimmingPool",
-      "kidsPlayArea",
-      "clubHouse",
-      "intercom",
-      "spa",
-      "servantRoom",
-      "security",
-      "shoppingCenter",
-      "gasConnection",
-      "sewageConnection",
-      "rainWaterHarvesting",
-      "houseKeeping",
-      "powerBackup",
-      "visitorParking",
-      "inductionHob",
-      "privateGarden",
-      "caretaker",
-      "washingMachine",
-      "gasLeakage",
-      "earthquake",
-      "fireAlarm",
-    ];
-    return amenityKeys.includes(key);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    setErrors({});
+    try {
+      const amenitiesList = Array.isArray(formData.amenities)
+        ? formData.amenities
+        : [];
+      const propertyData = { ...formData, amenities: amenitiesList };
+      let result;
+      if (editingProperty) {
+        result = await handleUpdateProperty(editingProperty._id, propertyData);
+      } else {
+        result = await handleAddProperty(propertyData);
+      }
+      if (!result.success) throw result;
+      await fetchProperties();
+      setShowForm(false);
+      resetForm();
+    } catch (error) {
+      if (error?.error && Array.isArray(error.error)) {
+        const fieldErrors = {};
+        error.error.forEach((err) => {
+          fieldErrors[err.field] = err.message;
+        });
+        setErrors(fieldErrors);
+      } else if (error.message) {
+        setErrors({ submit: error.message });
+      } else {
+        setErrors({ submit: "Failed to save property" });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
- const handleSubmit = async (e) => {
-   e.preventDefault();
-
-   // Frontend validation first
-   if (!validateForm()) return;
-
-   setIsSubmitting(true);
-   setErrors({});
-
-   try {
-     const amenitiesList = Array.isArray(formData.amenities)
-       ? formData.amenities
-       : [];
-
-     const propertyData = {
-       ...formData,
-       amenities: amenitiesList, // ensure array
-     };
-
-     let result;
-     if (editingProperty) {
-       result = await handleUpdateProperty(editingProperty._id, propertyData);
-     } else {
-       result = await handleAddProperty(propertyData);
-     }
-
-     if (!result.success) throw result;
-
-     // Success: refresh and reset
-     await fetchProperties();
-     setShowForm(false);
-     resetForm();
-   } catch (error) {
-     console.log(error);
-
-     // Field-level errors from API
-     if (error?.error && Array.isArray(error.error)) {
-       const fieldErrors = {};
-       error.error.forEach((err) => {
-         fieldErrors[err.field] = err.message;
-       });
-       setErrors(fieldErrors);
-     }
-     // General error
-     else if (error.message) {
-       setErrors({ submit: error.message });
-     }
-     // Fallback
-     else {
-       setErrors({ submit: "Failed to save property" });
-     }
-   } finally {
-     setIsSubmitting(false);
-   }
- };
 
   const handleEdit = (property) => {
     setEditingProperty(property);
     setShowForm(true);
   };
 
-  const handleDelete = async (propertyId) => {
-    if (window.confirm("Are you sure you want to delete this property?")) {
-      try {
-        const result = await handleDeleteProperty(propertyId);
-        if (!result.success) throw new Error(result.error);
-      } catch (error) {
-        alert(error.message || "Failed to delete property");
-      }
-    }
-  };
-
-  const PermanentlyDelete = async (id) => {
-    if (window.confirm("Are you sure you want to permanently delete this property?")) {
-      try {
-        const result = await propertiesAPI.permanentlyDeleteProperty(id);
-          await fetchDeletedProperties(); // refresh deleted list
-        if (!result.success) throw new Error(result.error);
-      } catch (error) {
-        alert(error.message || "Failed to permanently delete property");
-      }
-    }
-  };
-
- const handleRestoreProperty = async (id) => {
-   try {
-     const response = await propertiesAPI.restoreProperty(id);
-     if (response.success) {
-       await fetchDeletedProperties();
-       await fetchProperties(); // keep active list updated
-       if (refreshProperties) await refreshProperties();
-       return { success: true };
-     }
-     return { success: false, error: response.message };
-   } catch (err) {
-     console.error(err);
-     return { success: false, error: err.message };
-   }
- }; 
-
-const handleView = (property) => {
-  setViewingProperty(property);
-};
+  const handleView = (property) => setViewingProperty(property);
 
   const tableHeader = [
-    {
-      label: "Property",
-      key: "title",
-      imageKey: "images.0.presignUrl",
-      textKey: "title",
-    },
+    { label: "Property", key: "title", imageKey: "images.0.presignUrl", textKey: "title" },
     { label: "Location", key: "location" },
     { label: "Price", key: "price", dataFormat: "currency" },
     { label: "Type", key: "propertyType" },
@@ -449,10 +381,10 @@ const handleView = (property) => {
 
   const enableMobileView = location.pathname !== "/";
 
-
   return (
     <div className="space-y-6">
-      {loading ? (
+      {/* Only initial load spinner */}
+      {loading && properties.length === 0 ? (
         <div className="text-center py-10">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
           <p className="mt-2 text-gray-500 dark:text-gray-400">
@@ -463,7 +395,7 @@ const handleView = (property) => {
         <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-200 p-4 rounded-lg">
           {error}
           <button
-            onClick={fetchProperties}
+            onClick={() => fetchProperties(properties.length === 0)}
             className="ml-4 underline hover:text-blue-500 dark:hover:text-blue-400"
           >
             Try Again
@@ -498,7 +430,7 @@ const handleView = (property) => {
           tableData={showDeleted ? deletedProperties : properties}
           tableHeader={tableHeader}
           tableName={showDeleted ? "Deleted Properties" : "Property Management"}
-          searchKeys={["title"]}
+          searchKeys={["title", "createdBy.name", "updatedBy.name"]}
           createBtn={[
             {
               label: showDeleted ? "Back to Properties" : "Add Property",
@@ -517,7 +449,7 @@ const handleView = (property) => {
                     icon: Trash2,
                     onClick: () => {
                       setShowDeleted(true);
-                      fetchDeletedProperties(); // 🔥 load deleted from API
+                      fetchDeletedProperties();
                     },
                     btnClass:
                       "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
