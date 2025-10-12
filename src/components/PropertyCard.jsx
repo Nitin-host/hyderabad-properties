@@ -132,7 +132,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         </h4>
         <div className="flex items-center text-gray-400 mb-3">
           <MapPin size={16} className="mr-1" />
-          <span className="text-sm">
+          <span className="text-sm truncate">
             {property?.location}, {property?.landmarks}
           </span>
         </div>
@@ -152,7 +152,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
           {property.parking && (
             <div className="flex items-center">
               <SquareParking size={16} className="mr-1" />
-              <span>{capitalizeFirst(property.parking)}</span>
+              <span className='truncate'>{capitalizeFirst(property.parking)}</span>
             </div>
           )}
         </div>
