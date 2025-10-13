@@ -8,6 +8,7 @@ import StickyWhatsApp from './StickyWhatsApp.jsx';
 import logo from '../assets/RR_PROP_LOGO.png'
 import { Play } from 'lucide-react';
 import NeonVideoPlayer from '../util/NeonVideoPlayer.jsx';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams();
@@ -313,11 +314,17 @@ const PropertyDetailsPage = () => {
                     </button>
 
                     {/* Image */}
-                    <img
+                    <LazyLoadImage
+                      src={property.images[modalImageIndex]?.presignUrl || logo}
+                      alt="Expanded"
+                      effect="blur"
+                      className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+                    />
+                    {/* <img
                       src={property.images[modalImageIndex]?.presignUrl || logo}
                       alt="Expanded"
                       className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-                    />
+                    /> */}
 
                     {/* Desktop-only arrows */}
                     <button
@@ -357,11 +364,17 @@ const PropertyDetailsPage = () => {
                             : "border-gray-600"
                         }`}
                       >
-                        <img
+                        <LazyLoadImage
+                          src={image.presignUrl || logo}
+                          alt={image.key || `Image ${index + 1}`}
+                          effect="blur"
+                          className="w-full h-full object-cover"
+                        />
+                        {/* <img
                           src={image.presignUrl || logo}
                           alt={image.key || `Image ${index + 1}`}
                           className="w-full h-full object-cover"
-                        />
+                        /> */}
                       </button>
                     ))}
                   </div>
