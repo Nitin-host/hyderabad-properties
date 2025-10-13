@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useWishlist } from '../context/WishlistContext';
 import logo from '../assets/RR_PROP_LOGO.png'
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import "react-lazy-load-image-component/src/effects/blur.css";
 
 // ...rest of imports remain same
 
@@ -57,13 +59,24 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
     >
       {/* Image Section */}
       <div className="relative h-48 overflow-hidden">
-        <img
+        <LazyLoadImage
           src={currentImage || logo}
           alt={property.title}
+          effect="blur"
           className={`w-full h-full object-cover transition-transform duration-300 ${
             !isSold ? "hover:scale-105" : ""
           }`}
         />
+        {/* <img
+          src={currentImage || logo}
+          alt={property.title}
+          loading="lazy"
+          className={`w-full h-full object-cover transition-transform duration-300 ${
+            !isSold ? "hover:scale-105" : ""
+          }`}
+          style={{ filter: "blur(10px)" }}
+          onLoad={(e) => (e.currentTarget.style.filter = "none")}
+        /> */}
 
         {/* Status Badge */}
         {!isSold ? (
@@ -152,7 +165,9 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
           {property.parking && (
             <div className="flex items-center">
               <SquareParking size={16} className="mr-1" />
-              <span className='truncate'>{capitalizeFirst(property.parking)}</span>
+              <span className="truncate">
+                {capitalizeFirst(property.parking)}
+              </span>
             </div>
           )}
         </div>
