@@ -81,6 +81,7 @@ export const propertyFormConfig = {
           label: "Maintenance (₹/month)",
           placeholder: "Monthly maintenance cost",
           validation: { min: 0 },
+          required: true
         },
         {
           name: "location",
@@ -387,13 +388,20 @@ export const propertyFormConfig = {
       "description",
       "price",
       "location",
+      "landmarks",
+      "balconies",
       "propertyType",
       "size",
       "bedrooms",
       "maintenance",
+      "parking",
+      "totalFloors",
+      "furnished",
+      "flooring",
       "bathrooms",
       "status",
       "listedBy",
+      "brokerCharge",
     ],
     numeric: [
       "price",

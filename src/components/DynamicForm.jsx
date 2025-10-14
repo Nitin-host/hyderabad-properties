@@ -1,13 +1,29 @@
-import React from "react";
-import { propertyFormConfig, formHelpers } from "../config/propertyFormConfig";
+import React, { useRef, useEffect } from "react";
+import { propertyFormConfig } from "../config/propertyFormConfig";
 import CustomDatePicker from "../util/CustomDatePicker";
 
 const DynamicForm = ({ formData, onChange, errors = {} }) => {
   const { sections, styles } = propertyFormConfig;
+
+  // Refs for all fields
+  const fieldRefs = useRef({});
+
+  // Scroll to first error when errors object changes
+  useEffect(() => {
+    const errorKeys = Object.keys(errors);
+    if (errorKeys.length > 0) {
+      const firstErrorKey = errorKeys[0];
+      const ref = fieldRefs.current[firstErrorKey];
+      if (ref && ref.scrollIntoView) {
+        ref.scrollIntoView({ behavior: "smooth", block: "center" });
+        ref.focus && ref.focus(); // optional: focus the field
+      }
+    }
+  }, [errors]);
+
   const handleInputChange = (e, section) => {
     const { name, value, type, checked } = e.target;
 
-    // Checkbox handling
     if (type === "checkbox") {
       const key = section || name;
       const updatedArray = [...(formData[key] || [])];
@@ -19,13 +35,11 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
       return;
     }
 
-    // Radio-date
     if (type === "radio-date") {
       onChange({ ...formData, [name]: value });
       return;
     }
 
-    // Nested field handling
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       onChange({
@@ -33,7 +47,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
         [parent]: { ...formData[parent], [child]: value },
       });
     } else {
-      let processedValue =
+      const processedValue =
         value === "true" ? true : value === "false" ? false : value;
       onChange({ ...formData, [name]: processedValue });
     }
@@ -42,11 +56,9 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
   const getFieldValue = (fieldName) => {
     if (fieldName.includes(".")) {
       const [parent, child] = fieldName.split(".");
-      const value = formData[parent]?.[child];
-      return value !== undefined && value !== null ? value : "";
+      return formData[parent]?.[child] ?? "";
     }
-    const value = formData[fieldName];
-    return value !== undefined && value !== null ? value : "";
+    return formData[fieldName] ?? "";
   };
 
   const renderField = (field) => {
@@ -61,20 +73,26 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
       colSpan,
       section,
     } = field;
+
     const fieldClasses =
       colSpan === 2
         ? `${styles.fieldContainer} ${styles.colSpan2}`
         : styles.fieldContainer;
-    const isRequired = required ? " *" : "";
+
     const fieldError = errors[name];
+
+    // Attach ref to each field for scrolling
+    const refCallback = (el) => {
+      if (el) fieldRefs.current[name] = el;
+    };
 
     switch (type) {
       case "text":
         return (
-          <div key={name} className={fieldClasses}>
+          <div key={name} className={fieldClasses} ref={refCallback}>
             <label className={styles.label}>
               {label}
-              {isRequired}
+              {required && " *"}
             </label>
             <input
               type="text"
@@ -90,10 +108,10 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
 
       case "number":
         return (
-          <div key={name} className={fieldClasses}>
+          <div key={name} className={fieldClasses} ref={refCallback}>
             <label className={styles.label}>
               {label}
-              {isRequired}
+              {required && " *"}
             </label>
             <input
               type="text"
@@ -120,10 +138,10 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
 
       case "textarea":
         return (
-          <div key={name} className={fieldClasses}>
+          <div key={name} className={fieldClasses} ref={refCallback}>
             <label className={styles.label}>
               {label}
-              {isRequired}
+              {required && " *"}
             </label>
             <textarea
               name={name}
@@ -139,10 +157,10 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
 
       case "select":
         return (
-          <div key={name} className={fieldClasses}>
+          <div key={name} className={fieldClasses} ref={refCallback}>
             <label className={styles.label}>
               {label}
-              {isRequired}
+              {required && " *"}
             </label>
             <select
               name={name}
@@ -163,7 +181,11 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
 
       case "checkbox":
         return (
-          <div key={name} className={styles.checkboxContainer}>
+          <div
+            key={name}
+            className={styles.checkboxContainer}
+            ref={refCallback}
+          >
             <input
               type="checkbox"
               id={name}
@@ -175,15 +197,16 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
             <label htmlFor={name} className={styles.checkboxLabel}>
               {label}
             </label>
+            {fieldError && <p className={styles.error}>{fieldError}</p>}
           </div>
         );
 
       case "radio-date":
         return (
-          <div key={name} className={fieldClasses}>
+          <div key={name} className={fieldClasses} ref={refCallback}>
             <label className={styles.label}>
               {label}
-              {isRequired}
+              {required && " *"}
             </label>
             <div className="flex gap-4 items-center">
               {options.map((option) => (
