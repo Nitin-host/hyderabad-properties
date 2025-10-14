@@ -129,6 +129,14 @@ const Properties = () => {
   const [totalPages, setTotalPages] = useState(1);
   const { hasAdminAccess } = useAuth();
 
+  // Scroll to top whenever page changes
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth", // smooth scroll
+    });
+  }, [page]);
+
   // Fetch properties
   const fetchProperties = async () => {
     try {
@@ -308,81 +316,83 @@ const Properties = () => {
         )}
 
         {/* Pagination & Rows per Page */}
-        {properties.length > 0 && (!hasAdminAccess() || viewMode === "grid") && (
-          <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
-            {/* Rows per page - always visible */}
-            <div className="flex items-center gap-2 text-gray-300">
-              <span>Rows per page:</span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="bg-gray-700 text-white px-3 py-1 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                {[4, 8, 12, 16, 20, 24].map((num) => (
-                  <option key={num} value={num}>
-                    {num}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Page navigation - only if multiple pages */}
-            {totalPages > 1 && (
-              <div className="flex items-center gap-1 text-gray-300 flex-wrap">
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage(1)}
-                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+        {properties.length > 0 &&
+          (!hasAdminAccess() || viewMode === "grid") && (
+            <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+              {/* Rows per page - always visible */}
+              <div className="flex items-center gap-2 text-gray-300">
+                <span>Rows per page:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="bg-gray-700 text-white px-3 py-1 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <ChevronsLeft size={16} />
-                </button>
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage((prev) => prev - 1)}
-                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                {getPageNumbers(page, totalPages).map((pageNum, idx) =>
-                  pageNum === "start-ellipsis" || pageNum === "end-ellipsis" ? (
-                    <span key={idx} className="px-2 py-1 text-gray-400">
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={idx}
-                      onClick={() => setPage(pageNum)}
-                      className={`px-3 py-1 rounded-lg transition-colors ${
-                        pageNum === page
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                )}
-                <button
-                  disabled={page === totalPages}
-                  onClick={() => setPage((prev) => prev + 1)}
-                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
-                >
-                  <ChevronRight size={16} />
-                </button>
-                <button
-                  disabled={page === totalPages}
-                  onClick={() => setPage(totalPages)}
-                  className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
-                >
-                  <ChevronsRight size={16} />
-                </button>
+                  {[4, 8, 12, 16, 20, 24].map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Page navigation - only if multiple pages */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1 text-gray-300 flex-wrap">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(1)}
+                    className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronsLeft size={16} />
+                  </button>
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage((prev) => prev - 1)}
+                    className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {getPageNumbers(page, totalPages).map((pageNum, idx) =>
+                    pageNum === "start-ellipsis" ||
+                    pageNum === "end-ellipsis" ? (
+                      <span key={idx} className="px-2 py-1 text-gray-400">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={idx}
+                        onClick={() => setPage(pageNum)}
+                        className={`px-3 py-1 rounded-lg transition-colors ${
+                          pageNum === page
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  )}
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage((prev) => prev + 1)}
+                    className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage(totalPages)}
+                    className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronsRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
       </div>
       <StickyWhatsApp />
     </div>

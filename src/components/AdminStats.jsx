@@ -58,18 +58,43 @@ const AdminDashboard = () => {
     fetchStats();
   }, [hasAdminAccess, navigate, timeRange]);
 
+ const getDateRangeOfWeek = (week, year) => {
+   const simple = new Date(year, 0, 1 + (week - 1) * 7);
+   const dayOfWeek = simple.getDay();
+   const ISOweekStart = new Date(simple);
+
+   if (dayOfWeek <= 4)
+     ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+   else ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+
+   const ISOweekEnd = new Date(ISOweekStart);
+   ISOweekEnd.setDate(ISOweekStart.getDate() + 6);
+
+   const formatDate = (date) => {
+     let day = date.getDate();
+     let month = date.toLocaleString("en-GB", { month: "short" });
+     if (day < 10) day = `0${day}`; // ✅ Add 0 before single digits
+     return `${day} ${month}`;
+   };
+
+   return `${formatDate(ISOweekStart)} - ${formatDate(ISOweekEnd)} ${year}`;
+ };
+
+
   const mapCreationStats = (data) => {
     const mapped = data.map((item) => {
-      if (timeRange === "week")
+      if (timeRange === "week") {
         return {
-          period: `W${item._id.week} ${item._id.year}`,
+          period: getDateRangeOfWeek(item._id.week, item._id.year), // ✅ Now shows real dates
           count: item.count,
         };
-      if (timeRange === "month")
+      }
+      if (timeRange === "month") {
         return {
           period: `${item._id.month}/${item._id.year}`,
           count: item.count,
         };
+      }
       return { period: `${item._id.year}`, count: item.count };
     });
     setCreationStats(mapped);
@@ -131,29 +156,27 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Property Type Distribution */}
         <ChartCard title="Property Type Distribution">
-          <h2 className="text-lg font-semibold mb-2">Property Type Distribution</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            Property Type Distribution
+          </h2>
           <div className="w-full h-64 sm:h-72 lg:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={propertyTypeDistribution}
                   dataKey="count"
-                  nameKey="_id"
+                  nameKey="type" // <-- use the correct field
                   cx="50%"
                   cy="50%"
                   outerRadius="70%"
                   label
                   labelLine={false}
-                  // labelLine={false}
-                  // label={({ _id, percent }) =>
-                  //   `${_id}: ${(percent * 100).toFixed(1)}%`
-                  // }
                 >
                   {propertyTypeDistribution.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Legend  />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
