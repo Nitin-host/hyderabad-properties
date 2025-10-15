@@ -431,7 +431,13 @@ const PropertyDetailsPage = () => {
             {/* Description */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-4">Description</h2>
-              <p className="text-gray-300 leading-relaxed">
+              <p
+                className="text-gray-300 leading-relaxed w-full 
+                max-w-full 
+                sm:max-w-[500px] 
+                md:max-w-[700px] 
+                lg:max-w-[900px]"
+              >
                 {property.description}
               </p>
             </div>

@@ -2,12 +2,13 @@ import React, { useRef, useState, useEffect } from "react";
 import {
   Play,
   Pause,
-  CornerDownLeft,
+  Repeat ,
   Volume2,
   VolumeX,
   Maximize,
   Minimize,
   UploadCloud,
+  Replace,
 } from "lucide-react";
 
 const NeonVideoPlayer = ({
@@ -66,12 +67,42 @@ const NeonVideoPlayer = ({
         v.removeEventListener("webkitendfullscreen", onEndFullscreen);
     };
     }, []);
+
+    
   useEffect(() => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFsChange);
     return () =>
       document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      const v = videoRef.current;
+      if (!v) return;
+
+      switch (e.code) {
+        case "ArrowRight": // forward 10s
+          v.currentTime = Math.min(v.currentTime + 10, duration);
+          setCurrent(v.currentTime);
+          break;
+        case "ArrowLeft": // backward 10s
+          v.currentTime = Math.max(v.currentTime - 10, 0);
+          setCurrent(v.currentTime);
+          break;
+        case "Space": // play/pause toggle
+          e.preventDefault(); // prevent page scroll
+          togglePlay();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [duration, isPlaying]);
+
 
   const play = () => videoRef.current?.play();
   const pause = () => videoRef.current?.pause();
@@ -151,7 +182,7 @@ const NeonVideoPlayer = ({
           htmlFor="video-upload"
           className="flex flex-col items-center justify-center cursor-pointer"
         >
-          <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+          <Replace className="w-8 h-8 text-gray-400 mb-2" />
           <span className="text-gray-300">Click to upload video</span>
         </label>
       </div>
@@ -194,6 +225,7 @@ const NeonVideoPlayer = ({
         <div className="mt-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={togglePlay}
               aria-label={isPlaying ? "Pause" : "Play"}
               className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
@@ -205,11 +237,12 @@ const NeonVideoPlayer = ({
               )}
             </button>
             <button
+              type="button"
               onClick={handleReplay}
               title="Replay"
               className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
             >
-              <CornerDownLeft className="w-5 h-5 text-white" />
+              <Repeat  className="w-5 h-5 text-white" />
             </button>
             <div className="text-xs text-white/90 ml-1 font-mono">
               {formatTime(current)} / {formatTime(duration)}
@@ -217,6 +250,7 @@ const NeonVideoPlayer = ({
           </div>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={toggleMute}
               aria-label={muted ? "Unmute" : "Mute"}
               className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
@@ -259,7 +293,7 @@ const NeonVideoPlayer = ({
             title="Replace video"
             className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium cursor-pointer bg-gradient-to-r from-blue-600/80 via-purple-600/70 to-pink-600/60 hover:scale-105 transition-transform"
           >
-            <UploadCloud size={16} className="text-white" />
+            <Replace size={16} className="text-white" />
             <input
               type="file"
               accept="video/*"
