@@ -237,12 +237,28 @@ const PropertyManagement = ({
   // --- Media Handling --- (same logic as your original)
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const validFiles = files.filter(
+
+    // Calculate how many more images can be added
+    const remainingSlots = 10 - (existingImages.length + images.length);
+
+    if (remainingSlots <= 0) {
+      notifyWarning("You can only have a maximum of 10 images per property.");
+      return;
+    }
+
+    let validFiles = files.filter(
       (file) => file.type.startsWith("image/") && file.size <= 15 * 1024 * 1024
     );
-    if (validFiles.length < files.length) {
-      notifyWarning("Image files must be less than 15MB.");
+
+    if (validFiles.length > remainingSlots) {
+      validFiles = validFiles.slice(0, remainingSlots);
+      notifyWarning(`You can only add ${remainingSlots} more image(s).`);
     }
+
+    if (validFiles.length < files.length) {
+      notifyWarning("Some images were too large or invalid and were skipped.");
+    }
+
     setImages((prev) => [...prev, ...validFiles]);
   };
 
@@ -309,13 +325,19 @@ const PropertyManagement = ({
       const imageForm = new FormData();
       images.forEach((img) => imageForm.append("images", img));
       const res = await propertiesAPI.uploadImages(propertyId, imageForm);
-      if (!res.success) throw new Error("Image upload failed");
+      if(!res.success){
+        resetForm();
+        throw new Error("Image upload failed");
+      }
     }
     if (videos.length > 0) {
       const videoForm = new FormData();
       videos.forEach((v) => videoForm.append("videos", v));
       const res = await propertiesAPI.uploadVideos(propertyId, videoForm);
-      if (!res.success) throw new Error("Video upload failed");
+      if (!res.success) {
+        resetForm();
+        throw new Error("Video upload failed");
+      }
     }
   };
 
@@ -375,9 +397,15 @@ const PropertyManagement = ({
     { label: "Price", key: "price", dataFormat: "currency" },
     { label: "Type", key: "propertyType" },
     { label: "Status", key: "status" },
-    { label: "Created By", key: "createdBy.name" },
-    { label: "Updated By", key: "updatedBy.name" },
   ];
+
+  if(showDeleted){
+    tableHeader.push({ label: "Deleted By", key: "deletedBy.name" });
+    tableHeader.push({ label: "Deleted At", key: "deletedAt", dataFormat: "date" });
+  }else{
+    tableHeader.push({ label: "Created By", key: "createdBy.name" });
+    tableHeader.push({ label: "Updated By", key: "updatedBy.name" });
+  }
 
   const enableMobileView = location.pathname !== "/";
 
@@ -686,7 +714,7 @@ const PropertyManagement = ({
                   )}
                 </div>
               </div>
-
+                  {console.log('submitting', isSubmitting)}
               {/* Submit & Cancel */}
               <div className="flex justify-end space-x-4 pt-6 border-t border-gray-600">
                 <button

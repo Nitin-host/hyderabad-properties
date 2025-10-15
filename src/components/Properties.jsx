@@ -245,7 +245,7 @@ const Properties = () => {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Search by location or title..."
+              placeholder="Search by title or bedrooms..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);

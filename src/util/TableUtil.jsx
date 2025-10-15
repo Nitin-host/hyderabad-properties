@@ -243,7 +243,7 @@ function TableUtil({
             )}
           </div>
           <div
-            className="text-sm font-medium text-foreground dark:text-foreground-dark truncate"
+            className="text-sm font-medium text-foreground dark:text-foreground-dark truncate max-w-[150px]"
             title={text}
           >
             {text}
@@ -268,12 +268,12 @@ function TableUtil({
     }
 
     return (
-      <span
-        className="text-sm text-muted-foreground dark:text-muted-foreground-dark truncate"
+      <div
+        className="text-sm text-muted-foreground dark:text-muted-foreground-dark truncate max-w-[100px]"
         title={displayVal}
       >
         {displayVal}
-      </span>
+      </div>
     );
   };
 
