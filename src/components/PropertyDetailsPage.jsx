@@ -24,6 +24,7 @@ const PropertyDetailsPage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const thumbnailsRef = useRef(null);
 
 
   useEffect(() => {
@@ -105,6 +106,34 @@ const PropertyDetailsPage = () => {
       }
     };
   }, [autoSlide, property, currentImageIndex]);
+
+  useEffect(() => {
+    if (thumbnailsRef.current && property?.images?.length > 0) {
+      const container = thumbnailsRef.current;
+      const activeThumbnail = container.children[currentImageIndex];
+      if (activeThumbnail) {
+        const containerRect = container.getBoundingClientRect();
+        const thumbRect = activeThumbnail.getBoundingClientRect();
+
+        // If thumbnail is out of view on the right → scrollRight
+        if (thumbRect.right > containerRect.right) {
+          container.scrollBy({
+            left: thumbRect.right - containerRect.right + 8, // add small padding
+            behavior: "smooth",
+          });
+        }
+
+        // If thumbnail is out of view on the left → scrollLeft
+        if (thumbRect.left < containerRect.left) {
+          container.scrollBy({
+            left: thumbRect.left - containerRect.left - 8, // add small padding
+            behavior: "smooth",
+          });
+        }
+      }
+    }
+  }, [currentImageIndex, property?.images]);
+
 
   const nextImage = () => {
     if (property?.images?.length > 0) {
@@ -353,7 +382,10 @@ const PropertyDetailsPage = () => {
 
                 {/* Image Thumbnails */}
                 {property.images.length > 1 && (
-                  <div className="flex space-x-2 mt-4 overflow-x-auto">
+                  <div
+                    ref={thumbnailsRef} // attach the ref here
+                    className="flex space-x-2 mt-4 overflow-x-auto"
+                  >
                     {property.images.map((image, index) => (
                       <button
                         key={image._id}
@@ -370,22 +402,9 @@ const PropertyDetailsPage = () => {
                           effect="blur"
                           className="w-full h-full object-cover"
                         />
-                        {/* <img
-                          src={image.presignUrl || logo}
-                          alt={image.key || `Image ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        /> */}
                       </button>
                     ))}
                   </div>
-                )}
-                {(!Array.isArray(property.images) ||
-                  property.images.length === 0) && (
-                  <img
-                    src={logo}
-                    alt="No Images"
-                    className="w-full h-96 object-contain rounded-lg"
-                  />
                 )}
               </div>
             )}
@@ -429,15 +448,8 @@ const PropertyDetailsPage = () => {
             )}
 
             {/* Description */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Description</h2>
-              <p
-                className="text-gray-300 leading-relaxed w-full 
-                max-w-full 
-                sm:max-w-[500px] 
-                md:max-w-[700px] 
-                lg:max-w-[900px]"
-              >
+            <div className="overflow-x-hidden">
+              <p className="text-gray-300 leading-relaxed max-w-full sm:max-w-[500px] md:max-w-[700px] lg:max-w-[900px]">
                 {property.description}
               </p>
             </div>

@@ -239,10 +239,10 @@ const PropertyManagement = ({
     const files = Array.from(e.target.files);
 
     // Calculate how many more images can be added
-    const remainingSlots = 10 - (existingImages.length + images.length);
+    const remainingSlots = 20 - (existingImages.length + images.length);
 
     if (remainingSlots <= 0) {
-      notifyWarning("You can only have a maximum of 10 images per property.");
+      notifyWarning("You can only have a maximum of 20 images per property.");
       return;
     }
 
@@ -714,7 +714,6 @@ const PropertyManagement = ({
                   )}
                 </div>
               </div>
-                  {console.log('submitting', isSubmitting)}
               {/* Submit & Cancel */}
               <div className="flex justify-end space-x-4 pt-6 border-t border-gray-600">
                 <button
