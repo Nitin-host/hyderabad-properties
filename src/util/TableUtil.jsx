@@ -105,6 +105,9 @@ function TableUtil({
     currentPage * rowsPerPage
   );
 
+  console.log('PagedData',pagedData);
+  console.log('filteredData', filteredData)
+
   const handleSort = (idx) => {
     setCurrentPage(1);
     setSortConfig((prev) =>
