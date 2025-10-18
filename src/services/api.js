@@ -116,7 +116,7 @@ export const propertiesAPI = {
   updateProperty: (id, data) =>{
     return api.put(`/properties/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
-  getDeleted: () => api.get('/properties/deleted'),
+  getDeleted: (params) => api.get('/properties/deleted', {params}),
   deleteProperty: (id) => api.delete(`/properties/${id}`),
   restoreProperty: (id) => api.put(`/properties/admin/${id}/restore`),
   permanentlyDeleteProperty: (id) => api.delete(`/properties/admin/${id}/permanent`),

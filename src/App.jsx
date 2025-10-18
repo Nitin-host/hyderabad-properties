@@ -36,7 +36,7 @@ function App() {
             />
 
             {/* Main + Sidebar (flex-1 makes this fill available height) */}
-            <div className="lg:flex">
+            <div className="flex min-h-screen">
               {/* Sidebar */}
               <Sidebar
                 isOpen={isSidebarOpen}
@@ -46,11 +46,7 @@ function App() {
               />
 
               {/* Content */}
-              <main
-                className={`flex-1 transition-all duration-200 ${
-                  isDesktopCollapsed ? "lg:ml-0" : "lg:ml-1"
-                }`}
-              >
+              <main className="flex-1 min-w-0 bg-gray-900 text-gray-100 overflow-x-auto">
                 <ErrorBoundary>
                   <Routes>
                     <Route path="/" element={<Properties />} />
@@ -61,7 +57,7 @@ function App() {
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/favorites" element={<Wishlist />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path='/contact' element={<ContactPage/>}/>
+                    <Route path="/contact" element={<ContactPage />} />
                     <Route
                       path="*"
                       element={<div className="p-6">404 Not Found</div>}

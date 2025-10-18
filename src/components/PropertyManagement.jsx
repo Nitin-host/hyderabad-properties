@@ -36,12 +36,13 @@ const PropertyManagement = ({
   const [viewingProperty, setViewingProperty] = useState(null);
   const location = useLocation();
   const { user } = useAuth();
-
-
-  // Initial table load only
-  useEffect(() => {
-    if (!propProperties) fetchProperties(true);
-  }, [propProperties]);
+  // Pagination + Search + Sort
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchText, setSearchText] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, asc: true });
+  const [count, setCount] = useState();
 
 
   useEffect(() => {
@@ -57,32 +58,67 @@ const PropertyManagement = ({
     }
   }, [editingProperty]);
 
-
   // Fetch all (only uses spinner if loading=true)
-  const fetchProperties = async (isInitial = false) => {
+ const fetchProperties = async (isInitial = false) => {
+   if (isInitial) setLoading(true);
+   try {
+     const params = {
+       page,
+       limit,
+       search: searchText,
+       sortKey: sortConfig.key,
+       sortOrder: sortConfig.asc ? "asc" : "desc",
+     };
+     const response = await propertiesAPI.getAll(params);
+     const { data, pagination } = response;
+     setProperties(data || []);
+     setTotalPages(pagination.pages || 1);
+     setCount(pagination.total)
+     setError(null);
+   } catch (err) {
+     setError("Failed to load properties. Please try again.");
+   } finally {
+     if (isInitial) setLoading(false);
+   }
+ };
+
+ // Trigger fetch on pagination, search, or sort changes
+ useEffect(() => {
+   fetchProperties();
+ }, [page, limit, searchText, sortConfig]);
+
+  useEffect(() => {
+    if (showDeleted) fetchDeletedProperties();
+    else fetchProperties();
+  }, [page, limit, searchText, sortConfig, showDeleted]);
+
+ // Initial load
+ useEffect(() => {
+   if (!propProperties) fetchProperties(true);
+ }, [propProperties]);
+
+  const fetchDeletedProperties = async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      const response = await propertiesAPI.getAll();
-      setProperties(response.data || []);
+      const params = {
+        page,
+        limit,
+        search: searchText,
+        sortKey: sortConfig.key,
+        sortOrder: sortConfig.asc ? "asc" : "desc",
+      };
+      const response = await propertiesAPI.getDeleted(params);
+      const { data, pagination } = response;
+      setDeletedProperties(data || []);
+      setTotalPages(pagination.pages || 1);
+      setCount(pagination.total)
       setError(null);
     } catch (err) {
-      setError("Failed to load properties. Please try again.");
+      setError("Failed to load deleted properties. Please try again.");
     } finally {
       if (isInitial) setLoading(false);
     }
   };
-
-
-  const fetchDeletedProperties = async () => {
-    try {
-      const response = await propertiesAPI.getDeleted();
-      setDeletedProperties(response.data || []);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load deleted properties. Please try again.");
-    }
-  };
-
 
   const resetForm = () => {
     setFormData(formHelpers.getInitialFormData());
@@ -98,7 +134,6 @@ const PropertyManagement = ({
     setShowForm(false);
   };
 
-
   const handleAddProperty = async (propertyData) => {
     try {
       const res = await propertiesAPI.createProperty(propertyData);
@@ -108,10 +143,11 @@ const PropertyManagement = ({
           await handleMediaUpload(propertyId);
         } catch {
           notifyError("Failed to upload images or videos");
+          resetForm();
           setShowForm(false);
           return { success: false };
         }
-        setProperties(prev => [res.data, ...prev]);
+        setProperties((prev) => [res.data, ...prev]);
         notifySuccess(res.message || "Property added successfully");
         fetchProperties(); // Update in background in case of backend changes
         if (refreshProperties) refreshProperties();
@@ -125,12 +161,12 @@ const PropertyManagement = ({
     }
   };
 
-
   const handleUpdateProperty = async (id, propertyData) => {
     try {
       const formDataObj = new FormData();
       Object.entries(propertyData).forEach(([key, value]) => {
-        if (Array.isArray(value)) formDataObj.append(key, JSON.stringify(value));
+        if (Array.isArray(value))
+          formDataObj.append(key, JSON.stringify(value));
         else formDataObj.append(key, value ?? "");
       });
       if (removedImages.length > 0)
@@ -149,14 +185,13 @@ const PropertyManagement = ({
         });
         formDataObj.append("replaceMap", JSON.stringify(mapPayload));
       }
-      images.forEach(img => formDataObj.append("images", img));
-      videos.forEach(v => formDataObj.append("videos", v));
-
+      images.forEach((img) => formDataObj.append("images", img));
+      videos.forEach((v) => formDataObj.append("videos", v));
 
       const res = await propertiesAPI.updateProperty(id, formDataObj);
       if (res.success) {
-        setProperties(prev =>
-          prev.map(prop => (prop._id === id ? { ...res.data } : prop))
+        setProperties((prev) =>
+          prev.map((prop) => (prop._id === id ? { ...res.data } : prop))
         );
         notifySuccess(res.message || "Property updated successfully");
         fetchProperties(); // background sync
@@ -171,12 +206,11 @@ const PropertyManagement = ({
     }
   };
 
-
   const handleDeleteProperty = async (id) => {
     try {
       const response = await propertiesAPI.deleteProperty(id);
       if (response.success) {
-        setProperties(prev => prev.filter(prop => prop._id !== id));
+        setProperties((prev) => prev.filter((prop) => prop._id !== id));
         fetchProperties(); // background sync
         if (refreshProperties) refreshProperties();
         notifySuccess(response.message || "Property deleted successfully");
@@ -189,7 +223,6 @@ const PropertyManagement = ({
     }
   };
 
-
   const handleDelete = async (propertyId) => {
     if (window.confirm("Are you sure you want to delete this property?")) {
       const result = await handleDeleteProperty(propertyId);
@@ -197,13 +230,18 @@ const PropertyManagement = ({
     }
   };
 
-
   const PermanentlyDelete = async (id) => {
-    if (window.confirm("Are you sure you want to permanently delete this property?")) {
+    if (
+      window.confirm(
+        "Are you sure you want to permanently delete this property?"
+      )
+    ) {
       try {
         const result = await propertiesAPI.permanentlyDeleteProperty(id);
         if (result.success) {
-          setDeletedProperties(prev => prev.filter(prop => prop._id !== id));
+          setDeletedProperties((prev) =>
+            prev.filter((prop) => prop._id !== id)
+          );
           notifySuccess(result.message || "Property permanently deleted");
           fetchDeletedProperties();
         }
@@ -215,22 +253,30 @@ const PropertyManagement = ({
     }
   };
 
-
   const handleRestoreProperty = async (id) => {
-    try {
-      const response = await propertiesAPI.restoreProperty(id);
-      if (response.success) {
-        setDeletedProperties(prev => prev.filter(prop => prop._id !== id));
-        fetchDeletedProperties();
-        fetchProperties();
-        notifySuccess(response.message || "Property restored successfully");
-        if (refreshProperties) refreshProperties();
-        return { success: true };
+    if (
+      window.confirm(
+        "Are you sure you want to restore this property?"
+      )
+    ){
+      try {
+        const response = await propertiesAPI.restoreProperty(id);
+        if (response.success) {
+          setDeletedProperties((prev) =>
+            prev.filter((prop) => prop._id !== id)
+          );
+          fetchDeletedProperties();
+          notifySuccess(response.message || "Property restored successfully");
+          if (refreshProperties) refreshProperties();
+          return { success: true };
+        }
+        return { success: false, error: response.message };
+      } catch (err) {
+        notifyError(
+          err.message || "An error occurred while restoring property"
+        );
+        return { success: false, error: err.message };
       }
-      return { success: false, error: response.message };
-    } catch (err) {
-      notifyError(err.message || "An error occurred while restoring property");
-      return { success: false, error: err.message };
     }
   };
 
@@ -325,7 +371,7 @@ const PropertyManagement = ({
       const imageForm = new FormData();
       images.forEach((img) => imageForm.append("images", img));
       const res = await propertiesAPI.uploadImages(propertyId, imageForm);
-      if(!res.success){
+      if (!res.success) {
         resetForm();
         throw new Error("Image upload failed");
       }
@@ -392,17 +438,26 @@ const PropertyManagement = ({
   const handleView = (property) => setViewingProperty(property);
 
   const tableHeader = [
-    { label: "Property", key: "title", imageKey: "images.0.presignUrl", textKey: "title" },
+    {
+      label: "Property",
+      key: "title",
+      imageKey: "images.0.presignUrl",
+      textKey: "title",
+    },
     { label: "Location", key: "location" },
     { label: "Price", key: "price", dataFormat: "currency" },
     { label: "Type", key: "propertyType" },
     { label: "Status", key: "status" },
   ];
 
-  if(showDeleted){
+  if (showDeleted) {
     tableHeader.push({ label: "Deleted By", key: "deletedBy.name" });
-    tableHeader.push({ label: "Deleted At", key: "deletedAt", dataFormat: "date" });
-  }else{
+    tableHeader.push({
+      label: "Deleted At",
+      key: "deletedAt",
+      dataFormat: "date",
+    });
+  } else {
     tableHeader.push({ label: "Created By", key: "createdBy.name" });
     tableHeader.push({ label: "Updated By", key: "updatedBy.name" });
   }
@@ -429,103 +484,92 @@ const PropertyManagement = ({
             Try Again
           </button>
         </div>
-      ) : (showDeleted ? deletedProperties : properties).length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-gray-400 dark:border-gray-700 rounded-lg">
-          <p className="text-gray-500 dark:text-gray-400">
-            {showDeleted ? "No deleted properties" : "No properties found"}
-          </p>
-          {showDeleted ? (
-            <button
-              onClick={() => {
-                setShowDeleted(false);
-                fetchProperties();
-              }}
-              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              Back to Properties
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowForm(true)}
-              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              Add your first property
-            </button>
-          )}
-        </div>
       ) : (
-        <TableUtil
-          tableData={showDeleted ? deletedProperties : properties}
-          tableHeader={tableHeader}
-          tableName={showDeleted ? "Deleted Properties" : "Property Management"}
-          searchKeys={["title", "createdBy.name", "updatedBy.name"]}
-          createBtn={[
-            {
-              label: showDeleted ? "Back to Properties" : "Add Property",
-              icon: showDeleted ? RotateCcw : Plus,
-              onClick: () =>
-                showDeleted
-                  ? (setShowDeleted(false), fetchProperties())
-                  : setShowForm(true),
-              btnClass:
-                "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
-            },
-            ...(!showDeleted
-              ? [
-                  {
-                    label: "Deleted Properties",
-                    icon: Trash2,
-                    onClick: () => {
-                      setShowDeleted(true);
-                      fetchDeletedProperties();
+          <TableUtil
+            tableData={showDeleted ? deletedProperties : properties}
+            tableHeader={tableHeader}
+            tableName={showDeleted ? `Deleted Properties(${count})` : `Property Management(${count})`}
+            searchKeys={["title", "createdBy.name", "updatedBy.name"]}
+            isServerPaginated={true} // Must be true
+            currentPage={page} // Controlled current page
+            rowsPerPage={limit} // controlled rows per page
+            totalPages={totalPages} // total pages from server
+            onPageChange={setPage} // Trigger to change page
+            onRowsPerPageChange={setLimit}
+            onSearchChange={setSearchText}
+            onSortChange={setSortConfig}
+            searchPlaceholder={
+              showDeleted
+                ? "Search deleted properties..."
+                : "Search properties..."
+              }
+            createBtn={[
+              {
+                label: showDeleted ? "Back to Properties" : "Add Property",
+                icon: showDeleted ? RotateCcw : Plus,
+                onClick: () =>
+                  showDeleted
+                    ? (setShowDeleted(false), fetchProperties())
+                    : setShowForm(true),
+                btnClass:
+                  "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
+              },
+              ...(!showDeleted
+                ? [
+                    {
+                      label: "Deleted Properties",
+                      icon: Trash2,
+                      onClick: () => {
+                        setShowDeleted(true);
+                        fetchDeletedProperties();
+                      },
+                      btnClass:
+                        "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
                     },
-                    btnClass:
-                      "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
-                  },
-                ]
-              : []),
-          ]}
-          enableMobileView={enableMobileView}
-          tableActions={
-            showDeleted
-              ? [
-                  {
-                    btnTitle: "Restore",
-                    btnClass: "text-green-600 hover:text-green-500",
-                    iconComponent: RotateCcw,
-                    btnAction: (property) =>
-                      handleRestoreProperty(property._id),
-                  },
-                  {
-                    btnTitle: "Delete Permanently",
-                    btnClass: "text-red-600 hover:text-red-500",
-                    iconComponent: Trash2,
-                    isVisible: () => user?.role === "super_admin",
-                    btnAction: (property) => PermanentlyDelete(property._id),
-                  },
-                  {
-                    btnTitle: "View",
-                    btnClass: "text-blue-600 hover:text-blue-500",
-                    iconComponent: Eye,
-                    btnAction: (property) => handleView(property),
-                  },
-                ]
-              : [
-                  {
-                    btnTitle: "",
-                    btnClass: "",
-                    iconComponent: Edit,
-                    btnAction: (property) => handleEdit(property),
-                  },
-                  {
-                    btnTitle: "",
-                    btnClass: "text-red-500 hover:text-red-400",
-                    iconComponent: Trash2,
-                    btnAction: (property) => handleDelete(property._id),
-                  },
-                ]
-          }
-        />
+                  ]
+                : []),
+            ]}
+            enableMobileView={enableMobileView}
+            tableActions={
+              showDeleted
+                ? [
+                    {
+                      btnTitle: "Restore",
+                      btnClass: "text-green-600 hover:text-green-500",
+                      iconComponent: RotateCcw,
+                      btnAction: (property) =>
+                        handleRestoreProperty(property._id),
+                    },
+                    {
+                      btnTitle: "Delete Permanently",
+                      btnClass: "text-red-600 hover:text-red-500",
+                      iconComponent: Trash2,
+                      isVisible: () => user?.role === "super_admin",
+                      btnAction: (property) => PermanentlyDelete(property._id),
+                    },
+                    {
+                      btnTitle: "View",
+                      btnClass: "text-blue-600 hover:text-blue-500",
+                      iconComponent: Eye,
+                      btnAction: (property) => handleView(property),
+                    },
+                  ]
+                : [
+                    {
+                      btnTitle: "",
+                      btnClass: "",
+                      iconComponent: Edit,
+                      btnAction: (property) => handleEdit(property),
+                    },
+                    {
+                      btnTitle: "",
+                      btnClass: "text-red-500 hover:text-red-400",
+                      iconComponent: Trash2,
+                      btnAction: (property) => handleDelete(property._id),
+                    },
+                  ]
+            }
+          />
       )}
 
       {/* Form Modal */}

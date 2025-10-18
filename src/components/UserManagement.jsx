@@ -15,22 +15,43 @@ const UserManagement = () => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUser, setNewUser] = useState({ name: "", email: "", phone: "" });
   const [creating, setCreating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchText, setSearchText] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, asc: true });
 
+  // Initial fetch only once
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(true);
   }, []);
 
-  const fetchUsers = async () => {
-    setLoading(true);
+  // Fetch on pagination, search, or sort changes
+  useEffect(() => {
+    fetchUsers();
+  }, [page, limit, searchText, sortConfig]);
+
+  // fetchUsers function updated with isInitial parameter as above
+  const fetchUsers = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
-      const response = await usersAPI.getAdmins(); // fetch admins + super_admin
-      setUsers(response.data?.users || []);
+      const param = {
+        page,
+        limit,
+        search: searchText,
+        sortKey: sortConfig.key,
+        sortOrder: sortConfig.asc ? "asc" : "desc",
+      };
+      const response = await usersAPI.getAdmins(param); // fetch admins + super_admin
+      const { users, pagination } = response.data;
+      setUsers(users || []);
+      setTotalPages(pagination?.pages || 1);
       setError(null);
     } catch (err) {
       console.error(err);
       notifyError("Failed to load users.");
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
@@ -88,6 +109,13 @@ const UserManagement = () => {
     );
   }
 
+ const sortedUsers = users.slice().sort((a, b) => {
+   if (a.role === "super_admin" && b.role !== "super_admin") return -1;
+   if (b.role === "super_admin" && a.role !== "super_admin") return 1;
+   return 0;
+ });
+
+
   return (
     <div className="space-y-6">
       {loading ? (
@@ -97,8 +125,16 @@ const UserManagement = () => {
       ) : (
         <TableUtil
           tableName="Users"
-          tableData={users}
-          searchKeys={["name"]}
+          tableData={sortedUsers}
+          searchKeys={["name", "email"]}
+          isServerPaginated={true} // Must be true
+          currentPage={page} // Controlled current page
+          rowsPerPage={limit} // controlled rows per page
+          totalPages={totalPages} // total pages from server
+          onPageChange={setPage} // Trigger to change page
+          onRowsPerPageChange={setLimit}
+          onSearchChange={setSearchText}
+          onSortChange={setSortConfig}
           createBtn={[
             {
               label: "Add Admin User",
