@@ -120,14 +120,11 @@ const Properties = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("grid");
-  const location = useLocation();
 
   // Pagination
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(8);
   const [totalPages, setTotalPages] = useState(1);
-  const { hasAdminAccess } = useAuth();
 
   // Scroll to top whenever page changes
   useEffect(() => {
@@ -136,6 +133,11 @@ const Properties = () => {
       behavior: "smooth", // smooth scroll
     });
   }, [page]);
+  
+  // Reset page when filters or search change
+  useEffect(() => {
+    setPage(1);
+  }, [filters.propertyType, filters.bedrooms, searchTerm]);
 
   // Fetch properties
   const fetchProperties = async () => {
@@ -151,7 +153,7 @@ const Properties = () => {
         bedrooms: filters.bedrooms || undefined,
       };
 
-      const response = await propertiesAPI.getAll(params); // Pass pagination & filters
+      const response = await propertiesAPI.getAll(params);
       const { data, pagination } = response;
 
       setProperties(data || []);
@@ -213,20 +215,7 @@ const Properties = () => {
     return pages;
   };
 
-  const tableHeader = [
-    {
-      label: "Property",
-      key: "title",
-      imageKey: "images.0.presignUrl",
-      textKey: "title",
-    },
-    { label: "Bedrooms", key: "bedrooms" },
-    { label: "Location", key: "location" },
-    { label: "Price", key: "price", dataFormat: "currency" },
-    { label: "Type", key: "propertyType" },
-    { label: "Status", key: "status" },
-  ];
-  const enableMobileView = location.pathname !== "/";
+  if(error) throw Error(error)
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
@@ -259,27 +248,14 @@ const Properties = () => {
               handleFilterChange={handleFilterChange}
               clearFilters={clearFilters}
             />
-            {hasAdminAccess() && (
-              <button
-                onClick={() =>
-                  setViewMode(viewMode === "grid" ? "list" : "grid")
-                }
-                className="p-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                {viewMode === "grid" ? <List size={20} /> : <Grid size={20} />}
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Properties Grid/List */}
+        {/* Properties */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: limit }).map((_, idx) => (
-              <div
-                key={idx}
-                className="h-72 bg-gray-700 animate-pulse rounded-lg"
-              />
+              <SkeletonPropertyCard key={idx}/>
             ))}
           </div>
         ) : properties.length === 0 ? (
@@ -288,37 +264,19 @@ const Properties = () => {
             No properties found
           </div>
         ) : (
-          <>
-            {hasAdminAccess() && viewMode === "list" ? (
-              <TableUtil
-                tableName=""
-                tableData={properties}
-                tableHeader={tableHeader}
-                enableMobileView={enableMobileView}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {properties.map((property) => (
+              <PropertyCard
+                key={property._id || property.id}
+                property={property}
               />
-            ) : (
-              <div
-                className={`grid gap-6 ${
-                  viewMode === "list"
-                    ? "grid-cols-1"
-                    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                }`}
-              >
-                {properties.map((property) => (
-                  <PropertyCard
-                    key={property._id || property.id}
-                    property={property}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
 
         {/* Pagination & Rows per Page */}
         {properties.length > 0 &&
-          (!hasAdminAccess() || viewMode === "grid") && (
-            <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+         <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
               {/* Rows per page - always visible */}
               <div className="flex items-center gap-2 text-gray-300">
                 <span>Rows per page:</span>
@@ -392,7 +350,7 @@ const Properties = () => {
                 </div>
               )}
             </div>
-          )}
+          }
       </div>
       <StickyWhatsApp />
     </div>
@@ -400,3 +358,50 @@ const Properties = () => {
 };
 
 export default Properties;
+
+
+// SkeletonPropertyCard.jsx
+const SkeletonPropertyCard = () => (
+  <div className="rounded-xl bg-gray-800 overflow-hidden shadow-lg flex flex-col h-full animate-pulse">
+    {/* Image skeleton */}
+    <div className="relative">
+      <div className="h-40 bg-gray-700 w-full" />
+    </div>
+
+    {/* Card Content */}
+    <div className="p-4 flex flex-col flex-1 space-y-3">
+      {/* Price skeleton */}
+      <div className="h-6 bg-gray-700 rounded w-24" />
+
+      {/* Title skeleton */}
+      <div className="h-5 bg-gray-700 rounded w-3/5" />
+      <div className="h-4 bg-gray-700 rounded w-2/3" />
+
+      {/* Location skeleton */}
+      <div className="flex items-center space-x-2 mt-2">
+        <div className="h-4 w-4 bg-gray-700 rounded" />
+        <div className="h-4 bg-gray-700 rounded w-1/2" />
+      </div>
+
+      {/* Features skeleton */}
+      <div className="flex items-center space-x-3 mt-3">
+        <div className="h-4 w-14 bg-gray-700 rounded" />
+        <div className="h-4 w-16 bg-gray-700 rounded" />
+        <div className="h-4 w-16 bg-gray-700 rounded" />
+      </div>
+
+      {/* Amenities chips skeleton */}
+      <div className="flex gap-2 mt-2">
+        <div className="h-6 w-20 bg-gray-700 rounded-lg" />
+        <div className="h-6 w-14 bg-gray-700 rounded-lg" />
+        <div className="h-6 w-10 bg-gray-700 rounded-lg" />
+        <div className="h-6 w-12 bg-gray-700 rounded-lg" />
+      </div>
+
+      {/* Button skeleton */}
+      <div className="mt-4">
+        <div className="h-10 bg-gray-700 rounded-lg w-full" />
+      </div>
+    </div>
+  </div>
+);
