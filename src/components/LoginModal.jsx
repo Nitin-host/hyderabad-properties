@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from "react";
+  import React, { useState, useEffect, useRef } from "react";
   import { X, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
   import { useAuth } from "../context/AuthContext";
   import PhoneInputDropdown from "../util/PhoneNumberDropdown";
@@ -19,6 +19,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [showPasswordError, setShowPasswordError] = useState(false);
+    const firstOtpRef = useRef(null);
 
     const {
       login,
@@ -28,6 +29,12 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
       verifyForgotOtp,
       resetPassword,
     } = useAuth();
+
+    useEffect(() => {
+      if ((step === "otp" || step === "otpReset") && isOpen) {
+        firstOtpRef.current?.focus();
+      }
+    }, [step, isOpen]);
 
     useEffect(() => {
       if (!isOpen) {
@@ -239,6 +246,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                     <input
                       key={index}
                       type="text"
+                      ref={index === 0 ? firstOtpRef : null}
                       maxLength={1}
                       value={formData.otp[index] || ""}
                       onChange={(e) => {
@@ -364,7 +372,10 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                       <PhoneInputDropdown
                         allowedCountries={["IN"]}
                         onChange={(data) =>
-                          setFormData((prev) => ({ ...prev, phone: data.phone }))
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone: data.phone,
+                          }))
                         }
                       />
                     </div>
@@ -372,7 +383,9 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                 )}
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium">Email</label>
+                  <label className="block mb-2 text-sm font-medium">
+                    Email
+                  </label>
                   <div className="relative">
                     <Mail
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -598,7 +611,9 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                   ? "Don't have an account?"
                   : "Already have an account?"}
                 <button
-                  onClick={() => setStep(step === "login" ? "register" : "login")}
+                  onClick={() =>
+                    setStep(step === "login" ? "register" : "login")
+                  }
                   className="ml-2 text-blue-600 hover:text-blue-700 font-medium"
                 >
                   {step === "login" ? "Sign up" : "Sign in"}

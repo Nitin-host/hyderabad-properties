@@ -2,13 +2,15 @@ import React, { useRef, useState, useEffect } from "react";
 import {
   Play,
   Pause,
-  Repeat ,
+  Repeat,
   Volume2,
   VolumeX,
   Maximize,
   Minimize,
-  UploadCloud,
   Replace,
+  Clock,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 
 const NeonVideoPlayer = ({
@@ -31,6 +33,20 @@ const NeonVideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [localSrc, setLocalSrc] = useState(src);
 
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobileView(mobile);
+      if (!mobile) setShowVolumeSlider(false); // show slider on desktop by default
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+
   useEffect(() => setLocalSrc(src), [src]);
   useEffect(() => {
     const v = videoRef.current;
@@ -39,17 +55,18 @@ const NeonVideoPlayer = ({
     v.muted = muted;
     if (autoPlay) v.play().catch(() => {});
   }, [volume, muted, autoPlay]);
-    useEffect(() => {
+
+  useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
     const syncState = () => {
-        setIsPlaying(!v.paused);
-        setCurrent(v.currentTime);
-        setDuration(v.duration || 0);
+      setIsPlaying(!v.paused);
+      setCurrent(v.currentTime);
+      setDuration(v.duration || 0);
     };
     const onEndFullscreen = () => {
-        setIsFullscreen(false);
+      setIsFullscreen(false);
     };
 
     v.addEventListener("loadedmetadata", syncState);
@@ -60,15 +77,14 @@ const NeonVideoPlayer = ({
     v.addEventListener("webkitendfullscreen", onEndFullscreen);
 
     return () => {
-        v.removeEventListener("loadedmetadata", syncState);
-        v.removeEventListener("play", () => setIsPlaying(true));
-        v.removeEventListener("pause", () => setIsPlaying(false));
-        v.removeEventListener("timeupdate", () => setCurrent(v.currentTime));
-        v.removeEventListener("webkitendfullscreen", onEndFullscreen);
+      v.removeEventListener("loadedmetadata", syncState);
+      v.removeEventListener("play", () => setIsPlaying(true));
+      v.removeEventListener("pause", () => setIsPlaying(false));
+      v.removeEventListener("timeupdate", () => setCurrent(v.currentTime));
+      v.removeEventListener("webkitendfullscreen", onEndFullscreen);
     };
-    }, []);
+  }, []);
 
-    
   useEffect(() => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFsChange);
@@ -103,7 +119,6 @@ const NeonVideoPlayer = ({
     return () => window.removeEventListener("keydown", handleKey);
   }, [duration, isPlaying]);
 
-
   const play = () => videoRef.current?.play();
   const pause = () => videoRef.current?.pause();
   const togglePlay = () => (isPlaying ? pause() : play());
@@ -135,10 +150,20 @@ const NeonVideoPlayer = ({
       setMuted(val === 0);
     }
   };
+
   const toggleMute = () => {
     setMuted((prev) => !prev);
     if (videoRef.current) videoRef.current.muted = !muted;
   };
+
+  const toggleVolumeSlider = () => {
+    if (isMobileView) {
+      setShowVolumeSlider((v) => !v);
+    } else {
+      toggleMute();
+    }
+  };
+
   const handleSeek = (e) => {
     const rect = e.target.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
@@ -146,6 +171,7 @@ const NeonVideoPlayer = ({
     if (videoRef.current) videoRef.current.currentTime = time;
     setCurrent(time);
   };
+
   const handleReplaceFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -153,10 +179,12 @@ const NeonVideoPlayer = ({
     setLocalSrc(url);
     onReplace?.(file);
   };
+
   const handleDelete = () => {
     setLocalSrc(null);
     onDelete?.();
   };
+
   const formatTime = (s = 0) => {
     s = Math.round(s);
     const sec = `${s % 60}`.padStart(2, "0");
@@ -207,6 +235,44 @@ const NeonVideoPlayer = ({
         aria-label="Custom Video Player"
         onClick={togglePlay}
       />
+      {/* Left -10s Seek Button */}
+      <button
+        onClick={() => {
+          if (videoRef.current) {
+            videoRef.current.currentTime = Math.max(
+              videoRef.current.currentTime - 10,
+              0
+            );
+            setCurrent(videoRef.current.currentTime);
+          }
+        }}
+        aria-label="Seek backward 10 seconds"
+        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 z-20 transition flex items-center justify-center gap-1"
+        style={{ userSelect: "none", width: 50, height: 50 }}
+      >
+        <Clock size={20} />
+        <span className="font-mono text-sm">10s</span>
+      </button>
+
+      {/* Right +10s Seek Button */}
+      <button
+        onClick={() => {
+          if (videoRef.current) {
+            videoRef.current.currentTime = Math.min(
+              videoRef.current.currentTime + 10,
+              duration
+            );
+            setCurrent(videoRef.current.currentTime);
+          }
+        }}
+        aria-label="Seek forward 10 seconds"
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 z-20 transition flex items-center justify-center gap-1"
+        style={{ userSelect: "none", width: 50, height: 50 }}
+      >
+        <Clock size={20} />
+        <span className="font-mono text-sm">10s</span>
+      </button>
+
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent z-10">
         <div
           className="relative h-2 rounded-full bg-white/6 cursor-pointer"
@@ -242,7 +308,7 @@ const NeonVideoPlayer = ({
               title="Replay"
               className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
             >
-              <Repeat  className="w-5 h-5 text-white" />
+              <Repeat className="w-5 h-5 text-white" />
             </button>
             <div className="text-xs text-white/90 ml-1 font-mono">
               {formatTime(current)} / {formatTime(duration)}
@@ -251,7 +317,7 @@ const NeonVideoPlayer = ({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={toggleMute}
+              onClick={toggleVolumeSlider}
               aria-label={muted ? "Unmute" : "Mute"}
               className="p-2 rounded-md bg-white/6 hover:bg-white/10 transition"
             >
@@ -261,16 +327,18 @@ const NeonVideoPlayer = ({
                 <Volume2 className="w-4 h-4 text-white" />
               )}
             </button>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={muted ? 0 : volume}
-              onChange={(e) => handleVolumeChange(Number(e.target.value))}
-              className="w-24"
-              style={{ accentColor: "#E8A667" }}
-            />
+            {(!isMobileView || showVolumeSlider) && (
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={muted ? 0 : volume}
+                onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                className="w-24"
+                style={{ accentColor: "#E8A667" }}
+              />
+            )}
             {fullScreen && (
               <button
                 onClick={toggleFullscreen}

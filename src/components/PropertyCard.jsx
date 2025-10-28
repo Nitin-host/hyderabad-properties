@@ -151,21 +151,23 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         </div>
 
         {/* Property Details */}
-        <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
-          <div className="flex items-center">
-            <Bed size={16} className="mr-1" />
-            <span>{property.bedrooms}</span>
+        <div className="flex items-center justify-between text-sm text-gray-400 mb-3 space-x-4 overflow-hidden">
+          <div className="flex items-center flex-shrink-0 min-w-[50px]">
+            <Bed size={16} className="mr-1 flex-shrink-0" />
+            <span className="truncate max-w-[40px] block">
+              {property.bedrooms}
+            </span>
           </div>
-          <div className="flex items-center">
-            <Square size={16} className="mr-1" />
-            <span>
+          <div className="flex items-center flex-shrink-0 min-w-[70px]">
+            <Square size={16} className="mr-1 flex-shrink-0" />
+            <span className="truncate max-w-[60px] block">
               {property.size} {property.sizeUnit}
             </span>
           </div>
           {property.parking && (
-            <div className="flex items-center">
-              <SquareParking size={16} className="mr-1" />
-              <span className="truncate">
+            <div className="flex items-center flex-shrink-0 min-w-[80px]">
+              <SquareParking size={16} className="mr-1 flex-shrink-0" />
+              <span className="truncate max-w-[70px] block">
                 {capitalizeFirst(property.parking)}
               </span>
             </div>
@@ -174,17 +176,18 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
 
         {/* Amenities Preview */}
         {property.amenities?.length > 0 ? (
-          <div className="mb-3 flex flex-wrap gap-1">
-            {property.amenities.slice(0, 2).map((amenity, index) => (
+          <div className="mb-3 flex gap-2 overflow-hidden whitespace-nowrap">
+            {property.amenities.slice(0, 3).map((amenity, index) => (
               <span
                 key={index}
-                className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded"
+                className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded inline-block truncate max-w-max"
+                title={amenity} // optional: show full text on hover
               >
                 {amenity}
               </span>
             ))}
             {property.amenities.length > 3 && (
-              <span className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded">
+              <span className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded inline-block">
                 +{property.amenities.length - 3} more
               </span>
             )}
