@@ -59,33 +59,37 @@ const PropertyManagement = ({
   }, [editingProperty]);
 
   // Fetch all (only uses spinner if loading=true)
- const fetchProperties = async (isInitial = false) => {
-   if (isInitial) setLoading(true);
-   try {
-     const params = {
-       page,
-       limit,
-       search: searchText,
-       sortKey: sortConfig.key,
-       sortOrder: sortConfig.asc ? "asc" : "desc",
-     };
-     const response = await propertiesAPI.getAll(params);
-     const { data, pagination } = response;
-     setProperties(data || []);
-     setTotalPages(pagination.pages || 1);
-     setCount(pagination.total)
-     setError(null);
-   } catch (err) {
-     setError("Failed to load properties. Please try again.");
-   } finally {
-     if (isInitial) setLoading(false);
-   }
- };
+const fetchProperties = async (isInitial = false) => {
+  if (isInitial) setLoading(true);
+  try {
+    const params = {
+      page,
+      limit,
+      search: searchText,
+      sortKey: sortConfig.key,
+      sortOrder: sortConfig.asc ? "asc" : "desc",
+    };
+    // Assuming you add a new `getAdminAll` method in propertiesAPI
+    const response = await propertiesAPI.getAdminAll(params);
+    console.log('response', response)
+    const { data, pagination } = response;
+    setProperties(data || []);
+    setTotalPages(pagination.pages || 1);
+    setCount(pagination.total);
+    setError(null);
+  } catch (err) {
+    setError("Failed to load admin properties. Please try again.");
+  } finally {
+    if (isInitial) setLoading(false);
+  }
+};
 
  // Trigger fetch on pagination, search, or sort changes
  useEffect(() => {
-   fetchProperties();
- }, [page, limit, searchText, sortConfig]);
+   if (user?.role === "admin" || user?.role === "super_admin") {
+     fetchProperties();
+   }
+ }, [page, limit, searchText, sortConfig, user]);
 
   useEffect(() => {
     if (showDeleted) fetchDeletedProperties();
@@ -248,7 +252,6 @@ const PropertyManagement = ({
         if (!result.success) throw new Error(result.error);
       } catch (error) {
         notifyError(error.message || "Failed to permanently delete property");
-        alert(error.message || "Failed to permanently delete property");
       }
     }
   };
@@ -308,10 +311,17 @@ const PropertyManagement = ({
     setImages((prev) => [...prev, ...validFiles]);
   };
 
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setVideos((prev) => [...prev, file]);
-  };
+ const handleVideoUpload = (e) => {
+   const file = e.target.files[0];
+   if (file && file.size > 200 * 1024 * 1024) {
+     notifyWarning("Video size too large. Max 200MB allowed.");
+     e.target.value = "";
+     return;
+   }
+   if (file) setVideos((prev) => [...prev, file]);
+   e.target.value = "";
+ };
+
 
   const removeExistingImage = (imageKey, index) => {
     if (imageKey) setRemovedImages((prev) => [...prev, imageKey]);
@@ -544,7 +554,7 @@ const PropertyManagement = ({
                       btnTitle: "Delete Permanently",
                       btnClass: "text-red-600 hover:text-red-500",
                       iconComponent: Trash2,
-                      isVisible: () => user?.role === "super_admin",
+                      // isVisible: () => user?.role === "super_admin",
                       btnAction: (property) => PermanentlyDelete(property._id),
                     },
                     {

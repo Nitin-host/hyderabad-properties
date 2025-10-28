@@ -110,38 +110,44 @@ export const authAPI = {
 };
 
 export const propertiesAPI = {
-  getAll: (params) => api.get('/properties', { params }),
+  getAll: (params) => api.get("/properties", { params }),
   getById: (id) => api.get(`/properties/${id}`),
-  createProperty: (data) => api.post('/properties', data),
-  updateProperty: (id, data) =>{
-    return api.put(`/properties/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+  getAdminAll: (params) => api.get("/properties/admin", { params }),
+  createProperty: (data) => api.post("/properties", data),
+  updateProperty: (id, data) => {
+    return api.put(`/properties/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
-  getDeleted: (params) => api.get('/properties/deleted', {params}),
+  getDeleted: (params) => api.get("/properties/deleted", { params }),
   deleteProperty: (id) => api.delete(`/properties/${id}`),
   restoreProperty: (id) => api.put(`/properties/admin/${id}/restore`),
-  permanentlyDeleteProperty: (id) => api.delete(`/properties/admin/${id}/permanent`),
+  permanentlyDeleteProperty: (id) =>
+    api.delete(`/properties/admin/${id}/permanent`),
   uploadImages: (propertyId, formData) => {
     return api.post(`/properties/${propertyId}/images`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
   uploadVideos: (propertyId, formData) => {
     return api.post(`/properties/${propertyId}/video`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
-  deleteImage: (propertyId, imageId) => api.delete(`/properties/${propertyId}/images/${imageId}`),
-  deleteVideo: (propertyId, videoId) => api.delete(`/properties/${propertyId}/videos/${videoId}`),
+  deleteImage: (propertyId, imageId) =>
+    api.delete(`/properties/${propertyId}/images/${imageId}`),
+  deleteVideo: (propertyId, videoId) =>
+    api.delete(`/properties/${propertyId}/videos/${videoId}`),
 };
 
 export const usersAPI = {
-  getAll: (params) => api.get("/users", { params }),
-  getById: (id) => api.get(`/users/${id}`),
-  update: (id, data) => api.put(`/users/${id}`, data),
+  getAll: (params) => api.get("/auth", { params }),
+  getById: (id) => api.get(`/auth/${id}`),
+  update: (id, data) => api.put(`/auth/${id}`, data),
   delete: (id) => api.delete(`/auth/${id}`),
   // Admin-specific endpoints
   createAdmin: (userData) => api.post("/auth/admin/create", userData),
