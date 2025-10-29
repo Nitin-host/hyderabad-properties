@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
+import { notifyWarning } from "../util/Notifications";
 
 const NeonVideoPlayer = ({
   src,
@@ -175,6 +176,11 @@ const NeonVideoPlayer = ({
   const handleReplaceFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 200 * 1024 * 1024) {
+      notifyWarning("File size must be 200MB or less");
+      e.target.value = null;
+      return;
+    }
     const url = URL.createObjectURL(file);
     setLocalSrc(url);
     onReplace?.(file);
