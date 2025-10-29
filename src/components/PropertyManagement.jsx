@@ -71,7 +71,6 @@ const fetchProperties = async (isInitial = false) => {
     };
     // Assuming you add a new `getAdminAll` method in propertiesAPI
     const response = await propertiesAPI.getAdminAll(params);
-    console.log('response', response)
     const { data, pagination } = response;
     setProperties(data || []);
     setTotalPages(pagination.pages || 1);
