@@ -148,7 +148,9 @@ const AdminDashboard = () => {
             </div>
           }
           title="Media Uploaded"
-          value={`${overview.totalImagesUploaded} / ${overview.totalVideosUploaded}`}
+          value={`${overview.totalImagesUploaded || 0} / ${
+            overview.totalVideosUploaded || 0
+          }`}
         />
       </div>
 
