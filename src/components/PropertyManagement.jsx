@@ -312,8 +312,8 @@ const fetchProperties = async (isInitial = false) => {
 
  const handleVideoUpload = (e) => {
    const file = e.target.files[0];
-   if (file && file.size > 200 * 1024 * 1024) {
-     notifyWarning("Video size too large. Max 200MB allowed.");
+   if (file && file.size > 250 * 1024 * 1024) {
+     notifyWarning("Video size too large. Max 250MB allowed.");
      e.target.value = "";
      return;
    }
