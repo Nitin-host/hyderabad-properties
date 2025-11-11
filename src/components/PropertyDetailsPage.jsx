@@ -211,6 +211,8 @@ const PropertyDetailsPage = () => {
     { name: "lift", label: "Lifts" },
   ];
 
+  const API = import.meta.env.VITE_API_BASE_URL || "";
+
   return (
     <div className="min-h-screen bg-gray-900">
       <StickyWhatsApp />
@@ -413,7 +415,7 @@ const PropertyDetailsPage = () => {
             {property.videos && property.videos.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">Videos</h2>
-                <div className="relative bg-gray-900 rounded-xl shadow-lg overflow-hidden h-96">
+                <div className="relative bg-gray-900 rounded-xl shadow-lg overflow-hidden">
                   {!isVideoPlaying ? (
                     <div
                       className="w-full h-full flex items-center justify-center cursor-pointer relative"
@@ -422,7 +424,7 @@ const PropertyDetailsPage = () => {
                       <img
                         src={property.videos[0]?.thumbnail || logo}
                         alt="Video Thumbnail"
-                        className="w-full h-full object-cover"
+                        className="w-full h-96 object-cover"
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Play size={65} />
@@ -438,8 +440,11 @@ const PropertyDetailsPage = () => {
                     //   className="w-full h-full object-cover"
                     // />
                     <NeonVideoPlayer
-                      src={property.videos[0]?.presignUrl || logo}
-                      // poster={property.videos[0]?.thumbnail || logo}
+                      src={`${API}${property.videos[0]?.masterProxyUrl || logo}`}
+                      poster={property.videos[0]?.thumbnail || logo}
+                      qualityOptions={
+                        property.videos[0]?.qualityProxyUrls || []
+                      }
                       autoPlay={true}
                     />
                   )}

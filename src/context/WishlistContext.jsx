@@ -50,7 +50,8 @@ export const WishlistProvider = ({ children }) => {
 
   // Check if property is favorite
   const isFavorite = (propertyId) => {
-    return favorites.some(fav => fav._id === propertyId);
+    if (!Array.isArray(favorites)) return false;
+    return favorites.some((fav) => fav._id === propertyId);
   };
 
   // Toggle favorite

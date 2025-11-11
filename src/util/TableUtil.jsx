@@ -326,25 +326,91 @@ function TableUtil({
   };
 
   // ------------------- Mobile Card & Skeleton -------------------
-  const MobileCard = ({ row }) => (
-    <div className="mb-3 p-4 border-l-4 rounded-lg shadow-sm bg-card text-card-foreground dark:bg-card-dark dark:text-card-foreground-dark">
+const MobileCard = ({ row }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleExpand = () => setExpanded((prev) => !prev);
+
+  const visibleColumns = tableHeader.slice(0, 2); // show top 2 columns always
+  const hiddenColumns = tableHeader.slice(2); // hide the rest under accordion
+
+  return (
+    <div className="mb-3 p-4 rounded-xl shadow-sm border border-border bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-100 transition-all duration-200">
+      {/* Checkbox (if selectable) */}
       {selectable && (
-        <input
-          type="checkbox"
-          checked={selected.has(row[rowIdKey])}
-          onChange={() => toggleSelectRow(row[rowIdKey])}
-        />
-      )}
-      {tableHeader.map((colDef, idx) => (
-        <div key={idx} className="flex justify-between mb-1 flex-wrap">
-          <strong className="min-w-[90px]">{colDef.label}:</strong>
-          <span className="text-sm text-muted-foreground dark:text-muted-foreground-dark truncate">
-            {renderCellValue(row, colDef)}
-          </span>
+        <div className="flex justify-end mb-2">
+          <input
+            type="checkbox"
+            checked={selected.has(row[rowIdKey])}
+            onChange={() => toggleSelectRow(row[rowIdKey])}
+            className="accent-blue-600"
+          />
         </div>
-      ))}
+      )}
+
+      {/* Always visible columns */}
+      <div className="space-y-2">
+        {visibleColumns.map((colDef, idx) => (
+          <div
+            key={idx}
+            className="flex justify-between items-center border-b border-border/40 pb-1 last:border-b-0"
+          >
+            <span className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
+              {colDef.label}
+            </span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px] text-right">
+              {renderCellValue(row, colDef)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Expandable Section */}
+      {hiddenColumns.length > 0 && (
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            expanded ? "max-h-[500px] mt-2" : "max-h-0"
+          }`}
+        >
+          <div className="space-y-2 pt-2 border-t border-border/40">
+            {hiddenColumns.map((colDef, idx) => (
+              <div
+                key={idx}
+                className="flex justify-between items-center border-b border-border/30 pb-1 last:border-b-0"
+              >
+                <span className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
+                  {colDef.label}
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px] text-right">
+                  {renderCellValue(row, colDef)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Toggle Button */}
+      {hiddenColumns.length > 0 && (
+        <button
+          onClick={toggleExpand}
+          className="mt-2 w-full flex items-center justify-center gap-1 text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+        >
+          {expanded ? (
+            <>
+              Hide Details <ChevronUp size={14} />
+            </>
+          ) : (
+            <>
+              Show Details <ChevronDown size={14} />
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Actions */}
       {tableActions.length > 0 && (
-        <div className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+        <div className="flex flex-wrap justify-end mt-3 gap-2">
           {tableActions.map((action, idx) => {
             const {
               btnTitle,
@@ -364,11 +430,13 @@ function TableUtil({
             return (
               <button
                 key={idx}
-                className={`${btnClass || "text-primary"} flex items-center`}
+                className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium border border-border hover:bg-muted/40 transition-all ${
+                  btnClass || "text-blue-500"
+                }`}
                 onClick={() => btnAction(row)}
                 title={btnTitle}
               >
-                {Icon ? <Icon size={16} /> : btnTitle}
+                {Icon ? <Icon size={14} /> : btnTitle}
               </button>
             );
           })}
@@ -376,6 +444,7 @@ function TableUtil({
       )}
     </div>
   );
+};
 
   const SkeletonRow = ({ cols }) => (
     <div className="animate-pulse grid grid-cols-1 gap-2">
