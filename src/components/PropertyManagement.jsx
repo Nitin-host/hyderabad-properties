@@ -312,8 +312,8 @@ const fetchProperties = async (isInitial = false) => {
 
  const handleVideoUpload = (e) => {
    const file = e.target.files[0];
-   if (file && file.size > 250 * 1024 * 1024) {
-     notifyWarning("Video size too large. Max 250MB allowed.");
+   if (file && file.size > 150 * 1024 * 1024) {
+     notifyWarning("Video size too large. Max 150MB allowed.");
      e.target.value = "";
      return;
    }
@@ -389,7 +389,7 @@ const fetchProperties = async (isInitial = false) => {
       const videoForm = new FormData();
       videos.forEach((v) => videoForm.append("videos", v));
       const res = await propertiesAPI.uploadVideos(propertyId, videoForm);
-      if (!res.success) {
+      if (!res.status) {
         resetForm();
         throw new Error("Video upload failed");
       }
@@ -446,6 +446,28 @@ const fetchProperties = async (isInitial = false) => {
 
   const handleView = (property) => setViewingProperty(property);
 
+  const handleRefreshVideoStatus = async (propertyId) => {
+    try {
+      const response = await propertiesAPI.checkVideoStatus(propertyId);
+      if (response.success) {
+        const updatedVideos = response.data.videos;
+
+        setProperties((prev) =>
+          prev.map((prop) =>
+            prop._id === propertyId ? { ...prop, videos: updatedVideos } : prop
+          )
+        );
+
+        notifySuccess("Video status refreshed successfully");
+      } else {
+        notifyError(response.message || "Failed to refresh video status");
+      }
+    } catch (error) {
+      notifyError("Failed to refresh video status");
+    }
+  };
+
+
   const tableHeader = [
     {
       label: "Property",
@@ -468,10 +490,22 @@ const fetchProperties = async (isInitial = false) => {
     });
   } else {
     tableHeader.push({ label: "Created By", key: "createdBy.name" });
-    tableHeader.push({ label: "Updated By", key: "updatedBy.name" });
+    tableHeader.push({ label: "Video Status", key: "videos[0].videoStatus" });
   }
 
+  // Video is not completed yet, so hide edit button
+  const isVideoCompleted = (property) => {
+    return property.videos[0]?.videoStatus === "completed" || property.videos[0]?.videoStatus === undefined || property.videos[0]?.videoStatus === "failed" || property.videos[0]?.videoStatus === "error";
+  };
+
+  // refresh button for video status visible
+  const isRefreshVisible = (property) => {
+    return property.videos && property.videos[0]?.videoStatus !== "completed" &&  property.videos[0]?.videoStatus !== "failed" && property.videos[0]?.videoStatus !== undefined && property.videos[0]?.videoStatus !== "error";
+  };
+
   const enableMobileView = location.pathname !== "/";
+
+  const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
   return (
     <div className="space-y-6">
@@ -494,91 +528,105 @@ const fetchProperties = async (isInitial = false) => {
           </button>
         </div>
       ) : (
-          <TableUtil
-            tableData={showDeleted ? deletedProperties : properties}
-            tableHeader={tableHeader}
-            tableName={showDeleted ? `Deleted Properties(${count})` : `Property Management(${count})`}
-            searchKeys={["title", "createdBy.name", "updatedBy.name"]}
-            isServerPaginated={true} // Must be true
-            currentPage={page} // Controlled current page
-            rowsPerPage={limit} // controlled rows per page
-            totalPages={totalPages} // total pages from server
-            onPageChange={setPage} // Trigger to change page
-            onRowsPerPageChange={setLimit}
-            onSearchChange={setSearchText}
-            onSortChange={setSortConfig}
-            searchPlaceholder={
-              showDeleted
-                ? "Search deleted properties..."
-                : "Search properties..."
-              }
-            createBtn={[
-              {
-                label: showDeleted ? "Back to Properties" : "Add Property",
-                icon: showDeleted ? RotateCcw : Plus,
-                onClick: () =>
-                  showDeleted
-                    ? (setShowDeleted(false), fetchProperties())
-                    : setShowForm(true),
-                btnClass:
-                  "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
-              },
-              ...(!showDeleted
-                ? [
-                    {
-                      label: "Deleted Properties",
-                      icon: Trash2,
-                      onClick: () => {
-                        setShowDeleted(true);
-                        fetchDeletedProperties();
-                      },
-                      btnClass:
-                        "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
+        <TableUtil
+          tableData={showDeleted ? deletedProperties : properties}
+          tableHeader={tableHeader}
+          tableName={
+            showDeleted
+              ? `Deleted Properties(${count})`
+              : `Property Management(${count})`
+          }
+          searchKeys={["title", "createdBy.name", "updatedBy.name"]}
+          isServerPaginated={true} // Must be true
+          currentPage={page} // Controlled current page
+          rowsPerPage={limit} // controlled rows per page
+          totalPages={totalPages} // total pages from server
+          onPageChange={setPage} // Trigger to change page
+          onRowsPerPageChange={setLimit}
+          onSearchChange={setSearchText}
+          onSortChange={setSortConfig}
+          searchPlaceholder={
+            showDeleted
+              ? "Search deleted properties..."
+              : "Search properties..."
+          }
+          createBtn={[
+            {
+              label: showDeleted ? "Back to Properties" : "Add Property",
+              icon: showDeleted ? RotateCcw : Plus,
+              onClick: () =>
+                showDeleted
+                  ? (setShowDeleted(false), fetchProperties())
+                  : setShowForm(true),
+              btnClass:
+                "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
+            },
+            ...(!showDeleted
+              ? [
+                  {
+                    label: "Deleted Properties",
+                    icon: Trash2,
+                    onClick: () => {
+                      setShowDeleted(true);
+                      fetchDeletedProperties();
                     },
-                  ]
-                : []),
-            ]}
-            enableMobileView={enableMobileView}
-            tableActions={
-              showDeleted
-                ? [
-                    {
-                      btnTitle: "Restore",
-                      btnClass: "text-green-600 hover:text-green-500",
-                      iconComponent: RotateCcw,
-                      btnAction: (property) =>
-                        handleRestoreProperty(property._id),
-                    },
-                    {
-                      btnTitle: "Delete Permanently",
-                      btnClass: "text-red-600 hover:text-red-500",
-                      iconComponent: Trash2,
-                      // isVisible: () => user?.role === "super_admin",
-                      btnAction: (property) => PermanentlyDelete(property._id),
-                    },
-                    {
-                      btnTitle: "View",
-                      btnClass: "text-blue-600 hover:text-blue-500",
-                      iconComponent: Eye,
-                      btnAction: (property) => handleView(property),
-                    },
-                  ]
-                : [
-                    {
-                      btnTitle: "",
-                      btnClass: "",
-                      iconComponent: Edit,
-                      btnAction: (property) => handleEdit(property),
-                    },
-                    {
-                      btnTitle: "",
-                      btnClass: "text-red-500 hover:text-red-400",
-                      iconComponent: Trash2,
-                      btnAction: (property) => handleDelete(property._id),
-                    },
-                  ]
-            }
-          />
+                    btnClass:
+                      "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
+                  },
+                ]
+              : []),
+          ]}
+          enableMobileView={enableMobileView}
+          tableActions={
+            showDeleted
+              ? [
+                  {
+                    btnTitle: "Restore",
+                    btnClass: "text-green-600 hover:text-green-500",
+                    iconComponent: RotateCcw,
+                    btnAction: (property) =>
+                      handleRestoreProperty(property._id),
+                  },
+                  {
+                    btnTitle: "Delete Permanently",
+                    btnClass: "text-red-600 hover:text-red-500",
+                    iconComponent: Trash2,
+                    // isVisible: () => user?.role === "super_admin",
+                    btnAction: (property) => PermanentlyDelete(property._id),
+                  },
+                  {
+                    btnTitle: "View",
+                    btnClass: "text-blue-600 hover:text-blue-500",
+                    iconComponent: Eye,
+                    btnAction: (property) => handleView(property),
+                  },
+                ]
+              : [
+                  {
+                    btnTitle: "",
+                    btnClass: "",
+                    iconComponent: Edit,
+                    // check the status of the video
+                    isVisible: (property) => isVideoCompleted(property),
+                    btnAction: (property) => handleEdit(property),
+                  },
+                  {
+                    btnTitle: "refresh Video Status",
+                    btnClass: "text-purple-500 hover:text-purple-400",
+                    iconComponent: RotateCcw,
+                    isVisible: (property) => isRefreshVisible(property),
+                    btnAction: (property) =>
+                      handleRefreshVideoStatus(property._id),
+                  },
+                  {
+                    btnTitle: "",
+                    btnClass: "text-red-500 hover:text-red-400",
+                    iconComponent: Trash2,
+                    btnAction: (property) => handleDelete(property._id),
+                  },
+                ]
+          }
+        />
       )}
 
       {/* Form Modal */}
@@ -614,7 +662,7 @@ const fetchProperties = async (isInitial = false) => {
                 {/* Images */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Images
+                    Images (max 20 images, each ≤ 15MB)
                   </label>
                   <div className="border-2 border-dashed border-gray-600 rounded-lg p-4">
                     <input
@@ -699,18 +747,52 @@ const fetchProperties = async (isInitial = false) => {
                 </div>
 
                 {/* Videos */}
+                {/* 🎬 Videos Section */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Videos
                   </label>
 
-                  {/* Show upload UI only if there is no existing video */}
-                  {existingVideos.length === 0 && (
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4">
+                  {/* 🧩 If at least one valid existing video exists */}
+                  {existingVideos.length > 0 &&
+                  existingVideos.some((v) => v.masterProxyUrl) ? (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {existingVideos.map((video, index) => (
+                        <NeonVideoPlayer
+                          key={video.key || video.id || index}
+                          src={
+                            video.masterProxyUrl
+                              ? `${API}${video.masterProxyUrl}`
+                              : ""
+                          }
+                          fullScreen={false}
+                          showQualityNotice={false}
+                          canEdit={
+                            user?.role === "admin" ||
+                            user?.role === "super_admin"
+                          }
+                          onReplace={(file) =>
+                            handleReplaceVideo(
+                              { target: { files: [file] } },
+                              video.masterKey || video.id
+                            )
+                          }
+                          onDelete={() =>
+                            removeExistingVideo(
+                              video.masterKey || video.id,
+                              index
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    // 📤 Show upload UI if no valid video exists
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 mt-2">
                       <input
                         type="file"
                         accept="video/*"
-                        onChange={handleVideoUpload} // handleVideoUpload should add to videos array
+                        onChange={handleVideoUpload}
                         className="hidden"
                         id="video-upload"
                       />
@@ -719,38 +801,12 @@ const fetchProperties = async (isInitial = false) => {
                         className="flex flex-col items-center justify-center cursor-pointer"
                       >
                         <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        Click to upload video
+                        <span>Click to upload video</span>
                       </label>
                     </div>
                   )}
 
-                  {/* Existing Videos with NeonVideoPlayer */}
-                  {existingVideos.length > 0 && (
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {existingVideos.map((video, index) => (
-                        <NeonVideoPlayer
-                          key={video.key || video.id || index}
-                          src={video.presignUrl}
-                          fullScreen={false}
-                          canEdit={
-                            user?.role === "admin" ||
-                            user?.role === "super_admin"
-                          }
-                          onReplace={(file) =>
-                            handleReplaceVideo(
-                              { target: { files: [file] } },
-                              video.key || video.id
-                            )
-                          }
-                          onDelete={() =>
-                            removeExistingVideo(video.key || video.id, index)
-                          }
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* New Videos Preview (before upload) */}
+                  {/* 🆕 New Videos Preview (before upload) */}
                   {videos.length > 0 && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {videos.map((vid, index) => (
@@ -758,7 +814,7 @@ const fetchProperties = async (isInitial = false) => {
                           key={index}
                           src={URL.createObjectURL(vid)}
                           fullScreen={false}
-                          canEdit={true} // allow replace/delete before upload
+                          canEdit={true}
                           onDelete={() => removeVideo(index)}
                           onReplace={(file) => replaceVideo(file, index)}
                         />

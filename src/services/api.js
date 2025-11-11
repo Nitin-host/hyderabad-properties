@@ -1,12 +1,17 @@
 import axios from 'axios';
 import { notifyError } from '../util/Notifications';
 
+
+// ✅ Normalize base URL (always end with /api)
+const rawBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const baseURL = rawBase.endsWith("/api") ? rawBase : `${rawBase.replace(/\/$/, "")}/api`;
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL,
   withCredentials: true, // Include cookies for cross-origin requests
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -119,6 +124,7 @@ export const propertiesAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  checkVideoStatus: (propertyId) => api.get(`/properties/${propertyId}/video/status`),
   getDeleted: (params) => api.get("/properties/deleted", { params }),
   deleteProperty: (id) => api.delete(`/properties/${id}`),
   restoreProperty: (id) => api.put(`/properties/admin/${id}/restore`),

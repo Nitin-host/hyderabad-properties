@@ -157,7 +157,7 @@ const Properties = () => {
       const { data, pagination } = response;
 
       setProperties(data || []);
-      setTotalPages(pagination.pages || 1);
+      setTotalPages(pagination?.pages || 1);
 
       // Dynamic filters from fetched data
       const types = [...new Set((data || []).map((p) => p.propertyType))];
