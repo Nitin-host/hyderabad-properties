@@ -11,7 +11,8 @@ import NeonVideoPlayer from '../util/NeonVideoPlayer.jsx';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 const PropertyDetailsPage = () => {
-  const { id } = useParams();
+  // const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,35 +62,43 @@ const PropertyDetailsPage = () => {
   };
 
 
-  useEffect(() => {
-    const fetchProperty = async () => {
-      try {
-        setLoading(true);
-        const response = await propertiesAPI.getById(id);
+useEffect(() => {
+  const fetchProperty = async () => {
+    try {
+      setLoading(true);
+
+      const extractedId = slug.split("-").pop();
+      const isObjectId = /^[a-fA-F0-9]{24}$/.test(extractedId);
+
+      if (!isObjectId) {
+        const slugResponse = await propertiesAPI.getSlug(slug);
+        setProperty(slugResponse.data);
+      } else {
+        const response = await propertiesAPI.getById(extractedId);
         const fetchedProperty = response.data;
 
-        // List of statuses for which the page should not show
         const blockedStatuses = ["sold", "rented", "occupied"];
 
         if (blockedStatuses.includes(fetchedProperty.status?.toLowerCase())) {
-          // Redirect to home or another page
           navigate("/", { replace: true });
           return;
         }
 
         setProperty(fetchedProperty);
-      } catch (err) {
-        setError("Failed to load property details");
-        console.error("Error fetching property:", err);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    if (id) {
-      fetchProperty();
+    } catch (err) {
+      setError("Failed to load property details");
+      console.error("Error fetching property:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [id, navigate]);
+  };
+
+  if (slug) {
+    fetchProperty();
+  }
+}, [slug, navigate]);
+
 
 
   // Auto-slide effect for images
@@ -212,6 +221,11 @@ const PropertyDetailsPage = () => {
   ];
 
   const API = import.meta.env.VITE_API_BASE_URL || "";
+  const video = property?.videos?.[0];
+  const hasVideo = Boolean(
+    video?.masterProxyUrl && video.masterProxyUrl.trim() !== ""
+  );
+
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -229,7 +243,7 @@ const PropertyDetailsPage = () => {
             {property.location} {property.landmark}
           </p>
           <div className="fixed bottom-19 right-4 z-50">
-            <PropertyShare propertyId={property._id} />
+            <PropertyShare propertyId={property.slug ? property.slug : slug} />
           </div>
         </div>
 
@@ -250,7 +264,7 @@ const PropertyDetailsPage = () => {
                       property.images[currentImageIndex]?.caption ||
                       property.title
                     }
-                    className="w-full h-96 object-cover rounded-lg cursor-pointer"
+                    className="w-full h-56 sm:h-72 md:h-96 lg:h-[28rem] xl:h-[34rem] object-cover object-center rounded-lg cursor-pointer"
                     onClick={() => {
                       setModalImageIndex(currentImageIndex);
                       setIsImageModalOpen(true);
@@ -412,7 +426,7 @@ const PropertyDetailsPage = () => {
             )}
 
             {/* Videos Section */}
-            {property.videos && property.videos.length > 0 && (
+            {hasVideo && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">Videos</h2>
                 <div className="relative bg-gray-900 rounded-xl shadow-lg overflow-hidden">
@@ -440,7 +454,9 @@ const PropertyDetailsPage = () => {
                     //   className="w-full h-full object-cover"
                     // />
                     <NeonVideoPlayer
-                      src={`${API}${property.videos[0]?.masterProxyUrl || logo}`}
+                      src={`${API}${
+                        property.videos[0]?.masterProxyUrl || logo
+                      }`}
                       poster={property.videos[0]?.thumbnail || logo}
                       qualityOptions={
                         property.videos[0]?.qualityProxyUrls || []
