@@ -51,7 +51,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Properties />} />
                     <Route
-                      path="/property/:id"
+                      path="/property/:slug"
                       element={<PropertyDetailsPage />}
                     />
                     <Route path="/admin" element={<AdminDashboard />} />

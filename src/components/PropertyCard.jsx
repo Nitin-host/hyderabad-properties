@@ -11,6 +11,7 @@ import { useWishlist } from '../context/WishlistContext';
 import logo from '../assets/RR_PROP_LOGO.png'
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
+import { createSlug } from '../util/CreateSlug';
 
 // ...rest of imports remain same
 
@@ -207,7 +208,8 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
               if (!isSold) {
                 const propertyId =
                   property._id?.$oid || property._id || property.id;
-                navigate(`/property/${propertyId}`);
+                const slug = !property.slug ? createSlug(property) : property.slug;
+                navigate(`/property/${slug || property.slug}`);
               }
             }}
             disabled={isSold}
