@@ -59,11 +59,13 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
       }`}
     >
       {/* Image Section */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-50 overflow-hidden">
         <LazyLoadImage
           src={currentImage || logo}
           alt={property.title}
-          effect="blur"
+          loading="eager"
+          fetchPriority="high"
+          effect={currentImage ? "blur" : undefined}
           className={`w-full h-full object-cover transition-transform duration-300 ${
             !isSold ? "hover:scale-105" : ""
           }`}
@@ -87,13 +89,29 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
             </span>
           </div>
         ) : (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12 border-2 border-red-600 text-red-600 font-bold text-lg px-4 py-2 opacity-90 tracking-wider bg-white/0">
-            {capitalizeFirst(property.status)}
+          <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+            <div className="relative transform scale-90 md:scale-100 pointer-events-none">
+              {/* Hanging string (centered) */}
+              <div className="flex justify-center">
+                <div className="w-1.5 h-8 bg-gray-700 rounded-full"></div>
+              </div>
+
+              {/* Hanging board */}
+              <div className="relative mt-0 bg-red-500 text-white rounded-lg px-6 py-3 shadow-lg">
+                {/* right-side depth */}
+                {/* <div className="absolute right-2 top-2 w-2 h-full bg-red-600 rounded-lg shadow-inner"></div> */}
+
+                <span className="block text-2xl md:text-3xl font-extrabold tracking-wide">
+                  {capitalizeFirst(property.status)}
+                </span>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Like Button (disable if sold) */}
         <button
+          name="favorite"
           onClick={(e) => {
             e.stopPropagation();
             if (!isSold) {
@@ -119,12 +137,14 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         {!isSold && property.images?.length > 1 && (
           <>
             <button
+              name="left-arrow"
               onClick={prevImage}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70 transition-all"
             >
               ‹
             </button>
             <button
+              name="right-arrow"
               onClick={nextImage}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70 transition-all"
             >
@@ -204,11 +224,14 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         {/* Action Button */}
         <div className="flex space-x-2">
           <button
+            name="property-details"
             onClick={() => {
               if (!isSold) {
                 const propertyId =
                   property._id?.$oid || property._id || property.id;
-                const slug = !property.slug ? createSlug(property) : property.slug;
+                const slug = !property.slug
+                  ? createSlug(property)
+                  : property.slug;
                 navigate(`/property/${slug || property.slug}`);
               }
             }}

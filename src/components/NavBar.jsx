@@ -65,6 +65,7 @@ const NavBar = ({
         <div className="flex items-center justify-between">
           {/* Mobile menu button */}
           <button
+            name="SideBar"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 rounded-lg hover:bg-gray-700"
           >

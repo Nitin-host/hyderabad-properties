@@ -31,6 +31,7 @@ const FilterPopover = ({
   return (
     <div className="relative">
       <button
+        name="Filter"
         onClick={() => setIsOpen(!isOpen)}
         className={`p-3 rounded-lg flex items-center justify-center ${
           hasActiveFilters
@@ -46,6 +47,7 @@ const FilterPopover = ({
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-white font-medium">Filters</h3>
             <button
+              name="close"
               onClick={() => setIsOpen(false)}
               className="text-gray-400 hover:text-white"
             >
@@ -96,6 +98,7 @@ const FilterPopover = ({
 
             {/* Clear Filters */}
             <button
+              name="clear filters"
               onClick={clearFilters}
               className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-500 transition-colors text-sm"
             >
@@ -300,6 +303,7 @@ const Properties = () => {
               {totalPages > 1 && (
                 <div className="flex items-center gap-1 text-gray-300 flex-wrap">
                   <button
+                    name="left-chevrons"
                     disabled={page === 1}
                     onClick={() => setPage(1)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -307,6 +311,7 @@ const Properties = () => {
                     <ChevronsLeft size={16} />
                   </button>
                   <button
+                    name="left-chevron"
                     disabled={page === 1}
                     onClick={() => setPage((prev) => prev - 1)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -321,6 +326,7 @@ const Properties = () => {
                       </span>
                     ) : (
                       <button
+                        name="page-number"
                         key={idx}
                         onClick={() => setPage(pageNum)}
                         className={`px-3 py-1 rounded-lg transition-colors ${
@@ -334,6 +340,7 @@ const Properties = () => {
                     )
                   )}
                   <button
+                    name="right-chevron"
                     disabled={page === totalPages}
                     onClick={() => setPage((prev) => prev + 1)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -341,6 +348,7 @@ const Properties = () => {
                     <ChevronRight size={16} />
                   </button>
                   <button
+                    name="right-chevrons"
                     disabled={page === totalPages}
                     onClick={() => setPage(totalPages)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"

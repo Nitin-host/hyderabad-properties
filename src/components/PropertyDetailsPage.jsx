@@ -404,6 +404,7 @@ useEffect(() => {
                   >
                     {property.images.map((image, index) => (
                       <button
+                        name='full window'
                         key={image._id}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
@@ -483,6 +484,7 @@ useEffect(() => {
               <div className="flex mb-6 bg-gray-900/60 rounded-xl p-1 backdrop-blur-sm border border-gray-700">
                 {["overview", "details", "amenities", "location"].map((tab) => (
                   <button
+                    name={tab}
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`flex-1 p-2 rounded-lg text-sm font-small transition-all duration-200 relative
