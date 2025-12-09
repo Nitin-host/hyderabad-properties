@@ -693,6 +693,7 @@ const fetchProperties = async (isInitial = false) => {
                           <div key={index} className="relative">
                             <img
                               src={image.preview || image.presignUrl}
+                              alt={`Property Image ${index + 1}`}
                               className="w-full h-24 object-cover rounded-lg"
                             />
                             <label className="absolute bottom-1 left-1 bg-blue-600 text-white rounded px-2 py-1 cursor-pointer">
@@ -731,6 +732,7 @@ const fetchProperties = async (isInitial = false) => {
                         <div key={index} className="relative">
                           <img
                             src={URL.createObjectURL(img)}
+                            alt={`New Upload ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg"
                           />
                           <button
