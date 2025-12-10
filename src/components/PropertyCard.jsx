@@ -112,6 +112,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         {/* Like Button (disable if sold) */}
         <button
           name="favorite"
+          aria-labelledby='favorite'
           onClick={(e) => {
             e.stopPropagation();
             if (!isSold) {

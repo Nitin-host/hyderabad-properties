@@ -66,6 +66,7 @@ const NavBar = ({
           {/* Mobile menu button */}
           <button
             name="SideBar"
+            aria-label="side-bar"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 rounded-lg hover:bg-gray-700"
           >

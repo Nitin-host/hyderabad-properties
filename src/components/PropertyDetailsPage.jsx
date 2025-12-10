@@ -9,6 +9,7 @@ import logo from '../assets/RR_PROP_LOGO.png'
 import { Play } from 'lucide-react';
 import NeonVideoPlayer from '../util/NeonVideoPlayer.jsx';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import PropertySEONoDep from './PropertySEO.jsx';
 
 const PropertyDetailsPage = () => {
   // const { id } = useParams();
@@ -230,6 +231,15 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-gray-900">
       <StickyWhatsApp />
+      {/* Inject SEO for this property (only once, when property exists) */}
+      {property && (
+        <PropertySEONoDep
+          property={property}
+          siteUrl={
+            import.meta.env.VITE_SITE_URL || "https://rrpropertieshyderabad.com"
+          }
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Property Title and Price */}
         <div className="mb-8">
@@ -404,7 +414,7 @@ useEffect(() => {
                   >
                     {property.images.map((image, index) => (
                       <button
-                        name='full window'
+                        name="full window"
                         key={image._id}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
