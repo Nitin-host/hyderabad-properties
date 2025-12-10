@@ -32,6 +32,7 @@ const FilterPopover = ({
     <div className="relative">
       <button
         name="Filter"
+        aria-labelledby="filter"
         onClick={() => setIsOpen(!isOpen)}
         className={`p-3 rounded-lg flex items-center justify-center ${
           hasActiveFilters
