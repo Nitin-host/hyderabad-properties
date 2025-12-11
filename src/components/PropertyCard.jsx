@@ -112,7 +112,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         {/* Like Button (disable if sold) */}
         <button
           name="favorite"
-          aria-labelledby='favorite'
+          aria-label="Like your Favorite property"
           onClick={(e) => {
             e.stopPropagation();
             if (!isSold) {
@@ -139,6 +139,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
           <>
             <button
               name="left-arrow"
+              aria-label='Left arrow to change the images'
               onClick={prevImage}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70 transition-all"
             >
@@ -146,6 +147,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
             </button>
             <button
               name="right-arrow"
+              aria-label='Right arrow to change the images'
               onClick={nextImage}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70 transition-all"
             >
@@ -226,6 +228,7 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
         <div className="flex space-x-2">
           <button
             name="property-details"
+            aria-label="View Property Details"
             onClick={() => {
               if (!isSold) {
                 const propertyId =

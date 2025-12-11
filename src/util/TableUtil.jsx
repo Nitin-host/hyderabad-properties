@@ -393,6 +393,7 @@ const MobileCard = ({ row }) => {
       {/* Toggle Button */}
       {hiddenColumns.length > 0 && (
         <button
+          arai-label={expanded ? "Hide Details" : "Show Details"}
           onClick={toggleExpand}
           className="mt-2 w-full flex items-center justify-center gap-1 text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
         >
@@ -430,6 +431,7 @@ const MobileCard = ({ row }) => {
             return (
               <button
                 key={idx}
+                aria-label={btnTitle}
                 className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium border border-border hover:bg-muted/40 transition-all ${
                   btnClass || "text-blue-500"
                 }`}
@@ -477,6 +479,7 @@ const MobileCard = ({ row }) => {
               {createBtn.map((btn, idx) => (
                 <button
                   key={idx}
+                  aria-label={btn.title}
                   onClick={btn.onClick}
                   className={`flex items-center justify-center gap-1 px-3 py-2 rounded w-full sm:w-auto text-xs sm:text-sm ${
                     btn.btnClass || "bg-primary"
@@ -626,6 +629,7 @@ const MobileCard = ({ row }) => {
                           return (
                             <button
                               key={idx}
+                              aria-label={btnTitle}
                               className={`${
                                 btnClass || "text-primary"
                               } flex items-center`}
@@ -664,6 +668,7 @@ const MobileCard = ({ row }) => {
         </div>
         <div className="flex items-center gap-1 text-gray-300 flex-wrap">
           <button
+            aria-label="previous page"
             disabled={pageToDisplay === 1}
             onClick={() => internalChangePage(1)}
             className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -671,6 +676,7 @@ const MobileCard = ({ row }) => {
             <ChevronsLeft size={16} />
           </button>
           <button
+            aria-label="previous page"
             disabled={pageToDisplay === 1}
             onClick={() => internalChangePage(pageToDisplay - 1)}
             className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -684,6 +690,7 @@ const MobileCard = ({ row }) => {
               </span>
             ) : (
               <button
+                aria-label={`Page ${pageNum}`}
                 key={idx}
                 onClick={() => internalChangePage(pageNum)}
                 className={`px-3 py-1 rounded-lg transition-colors ${
@@ -698,12 +705,14 @@ const MobileCard = ({ row }) => {
           )}
           <button
             disabled={pageToDisplay === totalPages}
+            aria-label="next page"
             onClick={() => internalChangePage(pageToDisplay + 1)}
             className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
           >
             <ChevronRight size={16} />
           </button>
           <button
+            aria-label="next page"
             disabled={pageToDisplay === totalPages}
             onClick={() => internalChangePage(totalPages)}
             className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"

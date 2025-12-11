@@ -113,6 +113,7 @@ export default function Profile() {
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
+                  aria-label="Cancel to update the profile"
                   onClick={() => {
                     setEditMode(false);
                     setFormData({
@@ -125,6 +126,7 @@ export default function Profile() {
                   Cancel
                 </button>
                 <button
+                  aria-label="Submit"
                   type="submit"
                   disabled={saving}
                   className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
@@ -143,6 +145,7 @@ export default function Profile() {
               </div>
               <div className="flex justify-end">
                 <button
+                  aria-label="Edit Profile"
                   onClick={() => setEditMode(true)}
                   className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700"
                 >

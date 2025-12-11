@@ -44,6 +44,7 @@ const AdminDashboard = () => {
         <div className="border-b border-gray-700 mb-6">
           <nav className="-mb-px flex space-x-8">
             <button
+              aria-label="Statistics"
               onClick={() => setActiveTab("stats")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "stats"
@@ -55,6 +56,7 @@ const AdminDashboard = () => {
             </button>
 
             <button
+              aria-label="Property Management"
               onClick={() => setActiveTab("properties")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "properties"
@@ -67,6 +69,7 @@ const AdminDashboard = () => {
 
             {isSuperAdmin() && (
               <button
+                aria-label="User Management"
                 onClick={() => setActiveTab("users")}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "users"

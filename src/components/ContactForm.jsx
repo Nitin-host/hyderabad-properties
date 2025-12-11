@@ -111,6 +111,7 @@ const ContactPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
+            aria-label="Submit"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-4 py-3 transition transform hover:scale-105 shadow-md"
           >
             Submit

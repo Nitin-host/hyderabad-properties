@@ -227,6 +227,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                 : "Welcome to RR Properties"}
             </h2>
             <button
+              aria-label="Close"
               onClick={onClose}
               className="p-2 hover:bg-gray-700 rounded-lg transition"
             >
@@ -421,6 +422,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                     />
                     <button
                       type="button"
+                      aria-label={showPassword ? "Hide Password" : "Show Password"}
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2"
                     >
@@ -514,6 +516,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? "Hide Password" : "Show Password"}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
                   >
@@ -586,6 +589,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
 
             <button
               type="submit"
+              aria-label={"Submit"}
               disabled={isLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-4 py-3 transition transform hover:scale-105 shadow-md"
             >
@@ -611,6 +615,7 @@ import { notifySuccess, notifyWarning } from "../util/Notifications";
                   ? "Don't have an account?"
                   : "Already have an account?"}
                 <button
+                  aria-label={step === "login" ? "Switch to Sign up" : "Switch to Sign in"}
                   onClick={() =>
                     setStep(step === "login" ? "register" : "login")
                   }

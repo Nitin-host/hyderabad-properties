@@ -521,6 +521,7 @@ const fetchProperties = async (isInitial = false) => {
         <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-200 p-4 rounded-lg">
           {error}
           <button
+            aria-label="Try Again to fetch the property"
             onClick={() => fetchProperties(properties.length === 0)}
             className="ml-4 underline hover:text-blue-500 dark:hover:text-blue-400"
           >
@@ -638,6 +639,7 @@ const fetchProperties = async (isInitial = false) => {
                 {editingProperty ? "Edit Property" : "Add New Property"}
               </h3>
               <button
+                aria-label="Close Property Form"
                 onClick={() => {
                   setShowForm(false);
                   resetForm();
@@ -709,6 +711,7 @@ const fetchProperties = async (isInitial = false) => {
                             </label>
                             <button
                               type="button"
+                              aria-label="Remove the Image"
                               onClick={() =>
                                 removeExistingImage(
                                   image.key || image.id,
@@ -737,6 +740,7 @@ const fetchProperties = async (isInitial = false) => {
                           />
                           <button
                             type="button"
+                            aria-label="Remove the Image"
                             onClick={() => removeImage(index)}
                             className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
                           >
@@ -829,6 +833,7 @@ const fetchProperties = async (isInitial = false) => {
               <div className="flex justify-end space-x-4 pt-6 border-t border-gray-600">
                 <button
                   type="button"
+                  aria-label="Close Property Form"
                   onClick={() => {
                     setShowForm(false);
                     resetForm();
@@ -839,6 +844,7 @@ const fetchProperties = async (isInitial = false) => {
                 </button>
                 <button
                   type="submit"
+                  aria-label="Save Property"
                   disabled={isSubmitting}
                   className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
@@ -864,6 +870,7 @@ const fetchProperties = async (isInitial = false) => {
                 Property Details
               </h3>
               <button
+                aria-label="Close Property Details"
                 onClick={() => setViewingProperty(null)}
                 className="text-gray-400 hover:text-white transition-colors"
               >
@@ -950,6 +957,7 @@ const fetchProperties = async (isInitial = false) => {
             {/* Footer */}
             <div className="flex justify-end pt-6 border-t border-gray-700 mt-6">
               <button
+                aria-label="Close Property Details"
                 onClick={() => setViewingProperty(null)}
                 className="px-6 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
               >

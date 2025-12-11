@@ -35,6 +35,7 @@ export default function PropertySEONoDep({
   property = {},
   siteUrl = "https://rrpropertieshyderabad.com",
 }) {
+  // destructure and include location
   const {
     title,
     description,
@@ -50,20 +51,39 @@ export default function PropertySEONoDep({
     createdBy,
     propertyType,
     status,
+    location,
   } = property || {};
 
-  const pageUrl = slug
-    ? `${siteUrl}/property/${encodeURIComponent(slug)}`
-    : siteUrl;
-  const safeTitle = title || "Property | RR Properties";
-  const safeDesc =
-    description || "Find your dream property in Hyderabad with RR Properties.";
-  const mainImage =
-    images && images.length
-      ? images[0].startsWith("http")
-        ? images[0]
-        : `${siteUrl}${images[0]}`
-      : `${siteUrl}/og-image.png`;
+  // helper: ensure siteUrl has no trailing slash, path has no leading slash
+  const cleanSiteUrl = (u) => (u ? u.replace(/\/+$/, "") : "");
+  const cleanedSite = cleanSiteUrl(siteUrl);
+
+  // robust helper to turn item (string or object) into absolute URL or null
+  const makeAbsoluteUrl = (item) => {
+    if (!item) return null;
+    // handle string items
+    let path;
+    if (typeof item === "string") {
+      path = item;
+    } else if (item && typeof item === "object") {
+      path = item.presignUrl || item.url || item.path || null;
+    } else {
+      path = null;
+    }
+    if (!path) return null;
+
+    // already absolute: http(s) or protocol-relative (//cdn.example)
+    if (/^(https?:)?\/\//i.test(path)) return path;
+
+    // otherwise join with siteUrl ensuring single slash
+    const cleanedPath = String(path).replace(/^\/+/, "");
+    return `${cleanedSite}/${cleanedPath}`;
+  };
+
+  // safe mainImage + JSON-LD image list
+  const safeMainImage =
+    (Array.isArray(images) && images.length && makeAbsoluteUrl(images[0])) ||
+    `${cleanedSite}/og-image.png`;
 
   useEffect(() => {
     // Save previous head values so we can restore them on cleanup
@@ -104,42 +124,53 @@ export default function PropertySEONoDep({
       ? canonicalEl.getAttribute("href")
       : null;
 
-    // --- APPLY NEW META (same logic as before) ---
+    // --- APPLY NEW META ---
+    const safeTitle = title || "Property | RR Properties";
+    const safeDesc =
+      description ||
+      "Find your dream property in Hyderabad with RR Properties.";
+    const pageUrl = slug
+      ? `${cleanedSite}/property/${encodeURIComponent(slug)}`
+      : cleanedSite;
+
     const metaTitle = `${bedrooms ? bedrooms + " " : ""}${
       propertyType ? propertyType + " in " : ""
-    }${property.location ? property.location.trim() : ""}${
+    }${(location || "").toString().trim()}${
       price ? ` | ${status || ""} ₹${price}` : ""
     } | RR Properties`;
+
     document.title = metaTitle || `${safeTitle} | RR Properties`;
 
     // basic meta
     setMeta("description", "name", safeDesc);
     setLink("canonical", pageUrl);
 
-    // Open Graph
-    setMeta("og:type", "property", "article"); // note: we set property attr programmatically below
+    // Open Graph (use 'property' attr)
+    setMeta("og:type", "property", "article");
     setMeta("og:title", "property", metaTitle || safeTitle);
     setMeta("og:description", "property", safeDesc);
     setMeta("og:url", "property", pageUrl);
-    setMeta("og:image", "property", mainImage);
+    setMeta("og:image", "property", safeMainImage);
 
-    // Twitter card (harmless)
+    // Twitter card
     setMeta("twitter:card", "name", "summary_large_image");
     setMeta("twitter:title", "name", metaTitle || safeTitle);
     setMeta("twitter:description", "name", safeDesc);
-    setMeta("twitter:image", "name", mainImage);
+    setMeta("twitter:image", "name", safeMainImage);
 
-    // JSON-LD structured data (clean function reused)
+    // JSON-LD structured data
+    const jsonLdImages =
+      Array.isArray(images) && images.length
+        ? images.map((i) => makeAbsoluteUrl(i)).filter(Boolean)
+        : [safeMainImage];
+
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "RealEstateListing",
       url: pageUrl,
       name: safeTitle,
       description: safeDesc,
-      image:
-        images && images.length
-          ? images.map((i) => (i.startsWith("http") ? i : `${siteUrl}${i}`))
-          : [mainImage],
+      image: jsonLdImages,
       datePosted: createdAt,
       dateModified: updatedAt,
       numberOfRooms: bedrooms,
@@ -153,20 +184,23 @@ export default function PropertySEONoDep({
             price: String(price),
             priceCurrency: "INR",
             availability:
-              status && status.toLowerCase().includes("rent")
+              status &&
+              typeof status === "string" &&
+              status.toLowerCase().includes("rent")
                 ? "https://schema.org/ForRent"
                 : "https://schema.org/ForSale",
             validFrom: createdAt,
           }
         : undefined,
-      seller: createdBy
-        ? {
-            "@type": "RealEstateAgent",
-            name: createdBy.name,
-            telephone: createdBy.phone,
-            email: createdBy.email,
-          }
-        : undefined,
+      seller:
+        createdBy && (createdBy.name || createdBy.phone || createdBy.email)
+          ? {
+              "@type": "RealEstateAgent",
+              ...(createdBy.name ? { name: createdBy.name } : {}),
+              ...(createdBy.phone ? { telephone: createdBy.phone } : {}),
+              ...(createdBy.email ? { email: createdBy.email } : {}),
+            }
+          : undefined,
     };
 
     // Remove undefined entries helper
@@ -176,7 +210,8 @@ export default function PropertySEONoDep({
       const res = {};
       Object.keys(o).forEach((k) => {
         if (o[k] === undefined || o[k] === null) return;
-        res[k] = typeof o[k] === "object" ? clean(o[k]) : o[k];
+        const val = o[k];
+        res[k] = typeof val === "object" ? clean(val) : val;
       });
       return res;
     };
@@ -235,7 +270,8 @@ export default function PropertySEONoDep({
         removeElementIfExists(`script#${scriptId}`);
       }
     };
-  }, [property]); // run when property changes
+    // run when property or siteUrl changes
+  }, [property, siteUrl]);
 
   return null;
 }

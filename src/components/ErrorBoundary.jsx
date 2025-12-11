@@ -28,6 +28,7 @@ class ErrorBoundary extends React.Component {
           </h2>
           <p className="mt-2 text-gray-400">Please try again.</p>
           <button
+            aria-label="Retry"
             onClick={this.handleRetry}
             className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
           >
