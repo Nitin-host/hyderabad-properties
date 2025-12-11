@@ -157,6 +157,7 @@ function SocialButton({ href, hoverGradient, children }) {
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundImage = "none";
       }}
+      aria-label="social link"
     >
       {children}
     </a>

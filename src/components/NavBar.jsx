@@ -66,7 +66,7 @@ const NavBar = ({
           {/* Mobile menu button */}
           <button
             name="SideBar"
-            aria-label="side-bar"
+            aria-label="Side Bar"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 rounded-lg hover:bg-gray-700"
           >
@@ -92,6 +92,7 @@ const NavBar = ({
             {isAuthenticated ? (
               <div className="relative">
                 <button
+                  aria-label="User icon"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
                 >
@@ -128,6 +129,7 @@ const NavBar = ({
                       </Link>
                     )}
                     <button
+                      aria-label="Logout"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         logout();
@@ -143,6 +145,7 @@ const NavBar = ({
               </div>
             ) : (
               <button
+                aria-label="Login"
                 onClick={onLoginClick}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
@@ -168,6 +171,7 @@ const NavBar = ({
           </Link>
 
           <button
+            aria-label="Menu button to open the menu"
             onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
             className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
             title={isDesktopCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -201,6 +205,7 @@ const NavBar = ({
           {isAuthenticated ? (
             <div className="relative">
               <button
+                aria-label="User icon"
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
               >
@@ -237,6 +242,7 @@ const NavBar = ({
                     </Link>
                   )}
                   <button
+                    aria-label="Logout"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       logout();
@@ -252,6 +258,7 @@ const NavBar = ({
             </div>
           ) : (
             <button
+              aria-label="Login"
               onClick={onLoginClick}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >

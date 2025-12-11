@@ -193,6 +193,7 @@ useEffect(() => {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
+            aria-label='To go back to the Properties'
             onClick={() => navigate('/')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
@@ -291,11 +292,13 @@ useEffect(() => {
                     <>
                       <button
                         onClick={prevImage}
+                        aria-label="Left arrow to change the images"
                         className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
                       >
                         <ChevronLeftIcon className="h-6 w-6" />
                       </button>
                       <button
+                        aria-label="Right arrow to change the images"
                         onClick={nextImage}
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
                       >
@@ -304,6 +307,7 @@ useEffect(() => {
 
                       {/* Auto-slide control */}
                       <button
+                        aria-label={autoSlide ? "Pause Slideshow" : "Play Slideshow"}
                         onClick={toggleAutoSlide}
                         className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm hover:bg-opacity-75"
                       >
@@ -312,6 +316,7 @@ useEffect(() => {
 
                       {/* Favorite button */}
                       <button
+                        aria-label={isFavorite(property._id) ? "Remove from Favorites" : "Add to Favorites"}
                         onClick={handleFavoriteToggle}
                         className="absolute top-4 right-4 bg-white bg-opacity-80 p-2 rounded-full hover:bg-opacity-100"
                       >
@@ -362,6 +367,7 @@ useEffect(() => {
                   >
                     {/* Close button */}
                     <button
+                      aria-label="Close Image Modal"
                       onClick={closeImageModal}
                       className="absolute top-4 right-4 text-white text-2xl"
                     >
@@ -383,6 +389,7 @@ useEffect(() => {
 
                     {/* Desktop-only arrows */}
                     <button
+                      aria-label="Left arrow to change the images"
                       onClick={() =>
                         setModalImageIndex(
                           (modalImageIndex - 1 + property.images.length) %
@@ -394,6 +401,7 @@ useEffect(() => {
                       ‹
                     </button>
                     <button
+                      aria-label="Right arrow to change the images"
                       onClick={() =>
                         setModalImageIndex(
                           (modalImageIndex + 1) % property.images.length
@@ -414,6 +422,7 @@ useEffect(() => {
                   >
                     {property.images.map((image, index) => (
                       <button
+                        aria-label="View Image Thumbnail"
                         name="full window"
                         key={image._id}
                         onClick={() => setCurrentImageIndex(index)}
@@ -494,6 +503,7 @@ useEffect(() => {
               <div className="flex mb-6 bg-gray-900/60 rounded-xl p-1 backdrop-blur-sm border border-gray-700">
                 {["overview", "details", "amenities", "location"].map((tab) => (
                   <button
+                    aria-label={`Switch to ${tab} tab`}
                     name={tab}
                     key={tab}
                     onClick={() => setActiveTab(tab)}

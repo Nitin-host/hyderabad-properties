@@ -59,6 +59,7 @@ const labelClasses =
           {/* Header (mobile only) */}
           <div className="flex items-center justify-end p-4 border-b border-gray-700 lg:hidden">
             <button
+              aria-label="Close"
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
             >

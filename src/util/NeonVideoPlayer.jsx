@@ -254,6 +254,27 @@ const NeonVideoPlayer = ({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isTouchDevice]);
 
+  useEffect(() => {
+    const onFsChange = () => {
+      const isFs =
+        !!document.fullscreenElement ||
+        !!document.webkitFullscreenElement ||
+        !!document.mozFullScreenElement ||
+        !!document.msFullscreenElement;
+      setIsFullscreen(isFs);
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("mozfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("mozfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
+  }, []);
+
   // Controls
   const togglePlay = () => {
     const v = videoRef.current;
@@ -269,16 +290,69 @@ const NeonVideoPlayer = ({
     setMuted(next);
   };
 
-  const toggleFullscreen = () => {
-    if (!fullScreen) return; // Disable completely if prop is false
+  const isIOS = (() => {
+    if (typeof navigator === "undefined") return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  })();
+
+
+  const toggleFullscreen = async () => {
+    if (!fullScreen) return; // Disabled by prop
     const el = containerRef.current;
-    if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
+    const v = videoRef.current;
+    if (!el || !v) return;
+
+    try {
+      // iOS (use native video fullscreen)
+      if (isIOS) {
+        if (typeof v.webkitEnterFullscreen === "function") {
+          v.webkitEnterFullscreen();
+          setIsFullscreen(true);
+          return;
+        }
+      }
+      // Standard Fullscreen API
+      if (!document.fullscreenElement) {
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          // webkit prefixed (older Safari)
+          el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) {
+          el.msRequestFullscreen();
+        } else {
+          // last resort: try native video fullscreen
+          if (typeof v.webkitEnterFullscreen === "function") {
+            v.webkitEnterFullscreen();
+            setIsFullscreen(true);
+            return;
+          }
+        }
+        setIsFullscreen(true);
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        } else {
+          // No API to exit; if we entered via video.webkitEnterFullscreen(), user closes manually
+        }
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle failed:", err);
+      // Best-effort: if webkitEnterFullscreen exists, try it as fallback
+      try {
+        if (typeof v.webkitEnterFullscreen === "function") {
+          v.webkitEnterFullscreen();
+          setIsFullscreen(true);
+        }
+      } catch (e) {
+        console.error("webkitEnterFullscreen fallback failed:", e);
+      }
     }
   };
 
@@ -454,6 +528,7 @@ const NeonVideoPlayer = ({
           </label>
           {onDelete && (
             <button
+              aria-label="Delete the video"
               onClick={handleDelete}
               title="Delete video"
               className="px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white transition text-xs flex items-center gap-1"
@@ -503,6 +578,7 @@ const NeonVideoPlayer = ({
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-shrink overflow-hidden">
             <button
               type="button"
+              aria-label={isPlaying ? "Pause video" : "Play video"}
               onClick={togglePlay}
               className="p-2 hover:bg-white/15 rounded"
             >
@@ -510,6 +586,7 @@ const NeonVideoPlayer = ({
             </button>
             <button
               type="button"
+              aria-label="Skip backward 10 seconds"
               onClick={skipBackward}
               className="p-2 hover:bg-white/15 rounded"
             >
@@ -517,6 +594,7 @@ const NeonVideoPlayer = ({
             </button>
             <button
               type="button"
+              aria-label="Skip forward 10 seconds"
               onClick={skipForward}
               className="p-2 hover:bg-white/15 rounded"
             >
@@ -524,6 +602,7 @@ const NeonVideoPlayer = ({
             </button>
             <button
               type="button"
+              aria-label="Replace"
               onClick={handleReplay}
               className="p-2 hover:bg-white/15 rounded"
             >
@@ -537,6 +616,7 @@ const NeonVideoPlayer = ({
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button
               type="button"
+              aria-label={muted || volume === 0 ? "Unmute" : "Mute"}
               onClick={toggleMute}
               className="p-2 hover:bg-white/15 rounded"
             >
@@ -560,6 +640,7 @@ const NeonVideoPlayer = ({
             <div className="relative">
               <button
                 type="button"
+                aria-label="Video Settings"
                 onClick={() => setShowSettings((s) => (s ? false : "main"))}
                 className={`settings-toggle p-2 hover:bg-white/15 rounded transition-transform ${
                   showSettings ? "rotate-45" : ""
@@ -578,6 +659,8 @@ const NeonVideoPlayer = ({
                   {showSettings === "main" && (
                     <div className="flex flex-col">
                       <button
+                        type="button"
+                        aria-label="Playback speed"
                         className="flex justify-between items-center px-4 py-2 text-sm hover:bg-white/10 transition"
                         onClick={() => setShowSettings("speed")}
                       >
@@ -585,6 +668,8 @@ const NeonVideoPlayer = ({
                         <span className="text-gray-400">{playbackRate}x</span>
                       </button>
                       <button
+                        type="button"
+                        aria-label="Video quality"                      
                         className="flex justify-between items-center px-4 py-2 text-sm hover:bg-white/10 transition"
                         onClick={() => setShowSettings("quality")}
                       >
@@ -598,6 +683,8 @@ const NeonVideoPlayer = ({
                   {showSettings === "speed" && (
                     <div className="flex flex-col">
                       <button
+                        type="button"
+                        aria-label="Options for speed"
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium border-b border-white/10 hover:bg-white/10"
                         onClick={() => setShowSettings("main")}
                       >
@@ -607,6 +694,7 @@ const NeonVideoPlayer = ({
                       {[0.5, 1, 1.25, 1.5, 2].map((r) => (
                         <button
                           key={r}
+                          aria-label="Select the number for Speed of the video"
                           onClick={() => {
                             changeSpeed(r);
                             setShowSettings("main");
@@ -625,6 +713,8 @@ const NeonVideoPlayer = ({
                   {showSettings === "quality" && (
                     <div className="flex flex-col text-sm">
                       <button
+                        type="button"
+                        aria-label="Options for quality"
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium border-b border-white/10 hover:bg-white/10"
                         onClick={() => setShowSettings("main")}
                       >
@@ -634,6 +724,8 @@ const NeonVideoPlayer = ({
 
                       {/* 🆕 Data Saver */}
                       <button
+                        type="button"
+                        aria-label="Data Saver Quality"
                         onClick={() => {
                           const hls = hlsRef.current;
                           if (hls && hls.levels && hls.levels.length > 0) {
@@ -658,6 +750,8 @@ const NeonVideoPlayer = ({
 
                       {/* Auto */}
                       <button
+                        type="button"
+                        aria-label="Auto Quality"
                         onClick={() => {
                           changeQuality("auto");
                           setShowSettings("main");
@@ -672,6 +766,8 @@ const NeonVideoPlayer = ({
                       {/* Specific Quality Levels */}
                       {levels.map((lv) => (
                         <button
+                          type="button"
+                          aria-label="Select the number for Quality of the video"
                           key={lv.index}
                           onClick={() => {
                             changeQuality(lv.index);
@@ -695,6 +791,7 @@ const NeonVideoPlayer = ({
             {fullScreen && (
               <button
                 type="button"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 onClick={toggleFullscreen}
                 className="p-2 hover:bg-white/15 rounded"
               >

@@ -123,6 +123,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
               <>
                 <button
                   type="button"
+                  aria-label="Previous Month"
                   onClick={(e) => {
                     e.stopPropagation();
                     prevMonth();
@@ -146,6 +147,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
 
                 <button
                   type="button"
+                  aria-label="Next Month"
                   onClick={(e) => {
                     e.stopPropagation();
                     nextMonth();
@@ -160,6 +162,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
               <>
                 <button
                   type="button"
+                  aria-label="Previous Year"
                   onClick={(e) => {
                     e.stopPropagation();
                     const newYear = currentMonth.getFullYear() - 1;
@@ -175,6 +178,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                 <div className="flex items-center gap-2 cursor-default select-none grow justify-center text-gray-100 font-semibold">
                   <button
                     type="button"
+                    aria-label="Current Year"
                     onClick={(e) => {
                       e.stopPropagation();
                       setMode("year");
@@ -187,6 +191,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
 
                 <button
                   type="button"
+                  aria-label="Next Year"
                   onClick={(e) => {
                     e.stopPropagation();
                     const newYear = currentMonth.getFullYear() + 1;
@@ -205,6 +210,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
               <>
                 <button
                   type="button"
+                  aria-label="Previous Year Range"
                   onClick={() => prevYearRange()}
                   className="px-2 py-1 rounded hover:bg-gray-700"
                 >
@@ -215,6 +221,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                 </span>
                 <button
                   type="button"
+                  aria-label="Next Year Range"
                   onClick={() => nextYearRange()}
                   className="px-2 py-1 rounded hover:bg-gray-700"
                 >

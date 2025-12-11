@@ -185,6 +185,7 @@ const UserManagement = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Confirm Delete</h3>
               <button
+                aria-label="Close Delete Confirmation Modal"
                 onClick={() => setSelectedUser(null)}
                 className="text-gray-400 hover:text-gray-200"
               >
@@ -197,12 +198,14 @@ const UserManagement = () => {
             </p>
             <div className="flex justify-end gap-2">
               <button
+                aria-label="Cancel Delete User"
                 onClick={() => setSelectedUser(null)}
                 className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
               >
                 Cancel
               </button>
               <button
+                aria-label="Confirm Delete User"
                 onClick={handleDeleteUser}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
               >
@@ -220,6 +223,7 @@ const UserManagement = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Add Admin User</h3>
               <button
+                aria-label="Close Add User Modal"
                 onClick={() => setShowAddUserModal(false)}
                 className="text-gray-400 hover:text-gray-200"
               >
@@ -255,12 +259,14 @@ const UserManagement = () => {
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button
+                aria-label="Cancel Add User"
                 onClick={() => setShowAddUserModal(false)}
                 className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
               >
                 Cancel
               </button>
               <button
+                aria-label="Create New User"
                 onClick={handleCreateUser}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
                 disabled={creating}

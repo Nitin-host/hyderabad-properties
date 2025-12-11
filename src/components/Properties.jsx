@@ -32,7 +32,7 @@ const FilterPopover = ({
     <div className="relative">
       <button
         name="Filter"
-        aria-labelledby="filter"
+        aria-label="fFilters button"
         onClick={() => setIsOpen(!isOpen)}
         className={`p-3 rounded-lg flex items-center justify-center ${
           hasActiveFilters
@@ -49,6 +49,7 @@ const FilterPopover = ({
             <h3 className="text-white font-medium">Filters</h3>
             <button
               name="close"
+              aria-label="Close"
               onClick={() => setIsOpen(false)}
               className="text-gray-400 hover:text-white"
             >
@@ -100,6 +101,7 @@ const FilterPopover = ({
             {/* Clear Filters */}
             <button
               name="clear filters"
+              aria-label="Clear All Filters"
               onClick={clearFilters}
               className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-500 transition-colors text-sm"
             >
@@ -305,6 +307,7 @@ const Properties = () => {
                 <div className="flex items-center gap-1 text-gray-300 flex-wrap">
                   <button
                     name="left-chevrons"
+                    aria-label="left arrows to go to previous page"
                     disabled={page === 1}
                     onClick={() => setPage(1)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -313,6 +316,7 @@ const Properties = () => {
                   </button>
                   <button
                     name="left-chevron"
+                    aria-label="left arrow to go to previous page"
                     disabled={page === 1}
                     onClick={() => setPage((prev) => prev - 1)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -328,6 +332,7 @@ const Properties = () => {
                     ) : (
                       <button
                         name="page-number"
+                        aria-label={`Go to page ${pageNum}`}
                         key={idx}
                         onClick={() => setPage(pageNum)}
                         className={`px-3 py-1 rounded-lg transition-colors ${
@@ -342,6 +347,7 @@ const Properties = () => {
                   )}
                   <button
                     name="right-chevron"
+                    aria-label="right arrow to go to next page"
                     disabled={page === totalPages}
                     onClick={() => setPage((prev) => prev + 1)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
@@ -350,6 +356,7 @@ const Properties = () => {
                   </button>
                   <button
                     name="right-chevrons"
+                    aria-label="right arrows to go to last page"
                     disabled={page === totalPages}
                     onClick={() => setPage(totalPages)}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
