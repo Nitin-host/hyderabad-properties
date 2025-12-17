@@ -77,10 +77,14 @@ const NavBar = ({
             )}
           </button>
 
-          <Link to="/" className="flex items-center space-x-2">
+          <Link
+            to="/"
+            aria-label="RR Properties Hyderabad home"
+            className="flex items-center space-x-2"
+          >
             <img
               src="/RR_LOGO.svg"
-              alt="RR Properties"
+              alt=""
               className="h-10 w-auto object-contain"
             />
             <span className="font-bold text-xl text-[#E8A667]">
@@ -159,10 +163,14 @@ const NavBar = ({
       {/* Desktop navbar */}
       <div className="hidden lg:flex items-center justify-between bg-gray-800 shadow-md p-4 w-full sticky top-0 z-50">
         <div className="flex items-center space-x-4">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link
+            to="/"
+            aria-label="RR Properties Hyderabad home"
+            className="flex items-center space-x-2"
+          >
             <img
               src="/RR_LOGO.svg"
-              alt="RR Properties"
+              alt=""
               className="h-9 w-auto object-contain"
             />
             <span className="text-[#E8A667] font-bold text-xl tracking-widest">
