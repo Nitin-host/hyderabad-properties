@@ -162,7 +162,7 @@ const AdminDashboard = () => {
             Property Type Distribution
           </h2>
           <div className="w-full h-64 sm:h-72 lg:h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="300">
               <PieChart>
                 <Pie
                   data={propertyTypeDistribution}
@@ -198,7 +198,7 @@ const AdminDashboard = () => {
             </select>
           </div>
           <div className="w-full h-64 sm:h-72 lg:h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="300">
               <LineChart data={creationStats}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                 <XAxis dataKey="period" stroke="#ccc" />
@@ -223,7 +223,7 @@ const AdminDashboard = () => {
       {/* Property Status Breakdown */}
       <ChartCard title="Property Status Breakdown">
         <div className="w-full h-64 sm:h-72 lg:h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="300">
             <BarChart data={statusDistribution}>
               <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis dataKey="status" stroke="#ccc" />
