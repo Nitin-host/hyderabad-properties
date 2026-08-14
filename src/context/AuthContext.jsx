@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { authAPI } from "../services/api";
-import { notifyError, notifySuccess } from "../util/Notifications";
+import { notifySuccess } from "../util/Notifications";
 
 const AuthContext = createContext();
 
@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const loggedOutRef = useRef(false);
 
   // Role-based permission helpers
   const hasAdminAccess = () =>
@@ -29,46 +30,50 @@ export const AuthProvider = ({ children }) => {
 
   const isSuperAdmin = () => user && user.role === "super_admin";
 
-  // ✅ Auth check on load
+  useEffect(() => {
+    const onExpired = () => {
+      loggedOutRef.current = true;
+      setUser(null);
+    };
+    window.addEventListener("auth:session-expired", onExpired);
+    return () => window.removeEventListener("auth:session-expired", onExpired);
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("authToken");
-      if (!token) {
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      if (!token && !refreshToken) {
+        setUser(null);
+        localStorage.removeItem("user");
         setIsLoading(false);
         return;
       }
 
       try {
-        const userData = await authAPI.getProfile();
-         const finalUser = userData.user || userData.data || userData; 
+        if (!token && refreshToken) {
+          const refreshResponse = await authAPI.refreshToken(refreshToken);
+          if (!refreshResponse.success || !refreshResponse.data?.token) {
+            throw { status: 401 };
+          }
+          localStorage.setItem("authToken", refreshResponse.data.token);
+          if (refreshResponse.data.refreshToken) {
+            localStorage.setItem(
+              "refreshToken",
+              refreshResponse.data.refreshToken
+            );
+          }
+        }
+
+        const userData = await authAPI.getProfile({ skipErrorToast: true });
+        if (loggedOutRef.current) return;
+        const finalUser = userData.user || userData.data || userData;
         localStorage.setItem("user", JSON.stringify(finalUser));
         setUser(finalUser);
       } catch (error) {
         if (error.status === 401) {
-          // Try token refresh
-          try {
-            const refreshToken = localStorage.getItem("refreshToken");
-            if (refreshToken) {
-              const refreshResponse = await authAPI.refreshToken();
-              if (refreshResponse.success && refreshResponse.data?.token) {
-                localStorage.setItem("authToken", refreshResponse.data.token);
-                if (refreshResponse.data.refreshToken) {
-                  localStorage.setItem(
-                    "refreshToken",
-                    refreshResponse.data.refreshToken
-                  );
-                }
-                const userData = await authAPI.getProfile();
-                localStorage.setItem("user", JSON.stringify(userData));
-                setUser(userData);
-                setIsLoading(false);
-                return;
-              }
-            }
-          } catch (refreshError) {
-            console.error("Token refresh failed:", refreshError);
-          }
-          logout();
+          logout({ silent: true });
         } else {
           console.error("Profile fetch failed:", error);
         }
@@ -105,6 +110,7 @@ export const AuthProvider = ({ children }) => {
 
       // 🟢 Case 2: Normal login
       if (response.success && response.data?.token) {
+        loggedOutRef.current = false;
         localStorage.setItem("authToken", response.data.token);
         if (response.data.refreshToken) {
           localStorage.setItem("refreshToken", response.data.refreshToken);
@@ -136,12 +142,14 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.verifyAdminOtp({ email, otp });
 
       if (response.success && response.data?.token) {
+        loggedOutRef.current = false;
         localStorage.setItem("authToken", response.data.token);
         if (response.data.refreshToken) {
           localStorage.setItem("refreshToken", response.data.refreshToken);
         }
         localStorage.setItem("user", JSON.stringify(response.data.user));
         setUser(response.data.user);
+        notifySuccess("Logged in successfully");
         return { success: true };
       }
 
@@ -235,6 +243,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register({ name, email, password, phone });
 
       if (response.success && response.data?.token) {
+        loggedOutRef.current = false;
         localStorage.setItem("authToken", response.data.token);
         if (response.data.refreshToken) {
           localStorage.setItem("refreshToken", response.data.refreshToken);
@@ -257,18 +266,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = async ({ silent = false } = {}) => {
+    loggedOutRef.current = true;
     try {
       await authAPI.logout();
-      notifySuccess("Logged out successfully.");
     } catch (error) {
       console.error("Logout error:", error);
-      notifyError("Error during logout. Please try again.");
     } finally {
       setUser(null);
       localStorage.removeItem("authToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
+      if (!silent) notifySuccess("Logged out successfully");
     }
   };
 

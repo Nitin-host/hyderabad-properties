@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Upload, Trash2, Plus, Edit, RotateCcw, Eye } from "lucide-react";
 import { propertiesAPI } from "../services/api";
 import DynamicForm from "./DynamicForm";
-import { formHelpers } from "../config/propertyFormConfig";
+import { formHelpers, propertyFormConfig } from "../config/propertyFormConfig";
 import TableUtil from "../util/TableUtil";
 import { useLocation } from "react-router-dom";
 import NeonVideoPlayer from "../util/NeonVideoPlayer";
 import { useAuth } from "../context/AuthContext";
 import { notifyError, notifySuccess, notifyWarning } from "../util/Notifications";
+import { uploadVideoInChunks } from "../util/chunkedVideoUpload";
 
 
 const PropertyManagement = ({
@@ -28,6 +29,7 @@ const PropertyManagement = ({
   const [replaceMap, setReplaceMap] = useState({});
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(null);
   const [properties, setProperties] = useState(propProperties || []);
   const [loading, setLoading] = useState(!propProperties);
   const [error, setError] = useState(null);
@@ -43,6 +45,23 @@ const PropertyManagement = ({
   const [searchText, setSearchText] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, asc: true });
   const [count, setCount] = useState();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768
+  );
+  const fetchLock = useRef(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobileView(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileView) setPage(1);
+  }, [isMobileView]);
 
 
   useEffect(() => {
@@ -58,50 +77,49 @@ const PropertyManagement = ({
     }
   }, [editingProperty]);
 
-  // Fetch all (only uses spinner if loading=true)
-const fetchProperties = async (isInitial = false) => {
-  if (isInitial) setLoading(true);
-  try {
-    const params = {
-      page,
-      limit,
-      search: searchText,
-      sortKey: sortConfig.key,
-      sortOrder: sortConfig.asc ? "asc" : "desc",
-    };
-    // Assuming you add a new `getAdminAll` method in propertiesAPI
-    const response = await propertiesAPI.getAdminAll(params);
-    const { data, pagination } = response;
-    setProperties(data || []);
-    setTotalPages(pagination.pages || 1);
-    setCount(pagination.total);
-    setError(null);
-  } catch (err) {
-    setError("Failed to load admin properties. Please try again.");
-  } finally {
-    if (isInitial) setLoading(false);
-  }
-};
+  const mergeById = (prev, next) => {
+    const ids = new Set(prev.map((item) => String(item._id)));
+    return [...prev, ...(next || []).filter((item) => !ids.has(String(item._id)))];
+  };
 
- // Trigger fetch on pagination, search, or sort changes
- useEffect(() => {
-   if (user?.role === "admin" || user?.role === "super_admin") {
-     fetchProperties();
-   }
- }, [page, limit, searchText, sortConfig, user]);
+  const fetchProperties = async ({ initial = false, append = false } = {}) => {
+    if (append && fetchLock.current) return;
+    fetchLock.current = true;
+    if (initial) setLoading(true);
+    if (append) setLoadingMore(true);
+    try {
+      const params = {
+        page,
+        limit,
+        search: searchText,
+        sortKey: sortConfig.key,
+        sortOrder: sortConfig.asc ? "asc" : "desc",
+      };
+      const response = await propertiesAPI.getAdminAll(params);
+      const { data, pagination } = response;
+      setProperties((prev) =>
+        append ? mergeById(prev, data) : data || []
+      );
+      setTotalPages(pagination.pages || 1);
+      setCount(pagination.total);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load admin properties. Please try again.");
+    } finally {
+      fetchLock.current = false;
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
 
-  useEffect(() => {
-    if (showDeleted) fetchDeletedProperties();
-    else fetchProperties();
-  }, [page, limit, searchText, sortConfig, showDeleted]);
-
- // Initial load
- useEffect(() => {
-   if (!propProperties) fetchProperties(true);
- }, [propProperties]);
-
-  const fetchDeletedProperties = async (isInitial = false) => {
-    if (isInitial) setLoading(true);
+  const fetchDeletedProperties = async ({
+    initial = false,
+    append = false,
+  } = {}) => {
+    if (append && fetchLock.current) return;
+    fetchLock.current = true;
+    if (initial) setLoading(true);
+    if (append) setLoadingMore(true);
     try {
       const params = {
         page,
@@ -112,15 +130,38 @@ const fetchProperties = async (isInitial = false) => {
       };
       const response = await propertiesAPI.getDeleted(params);
       const { data, pagination } = response;
-      setDeletedProperties(data || []);
+      setDeletedProperties((prev) =>
+        append ? mergeById(prev, data) : data || []
+      );
       setTotalPages(pagination.pages || 1);
-      setCount(pagination.total)
+      setCount(pagination.total);
       setError(null);
     } catch (err) {
       setError("Failed to load deleted properties. Please try again.");
     } finally {
-      if (isInitial) setLoading(false);
+      fetchLock.current = false;
+      setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  useEffect(() => {
+    if (user?.role !== "admin" && user?.role !== "super_admin") return;
+    const append = isMobileView && page > 1;
+    const initial =
+      page === 1 &&
+      (showDeleted ? deletedProperties.length === 0 : properties.length === 0);
+    if (showDeleted) fetchDeletedProperties({ initial, append });
+    else fetchProperties({ initial, append });
+  }, [page, limit, searchText, sortConfig, showDeleted, user, isMobileView]);
+
+  const refreshList = () => {
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+    if (showDeleted) fetchDeletedProperties();
+    else fetchProperties();
   };
 
   const resetForm = () => {
@@ -135,6 +176,7 @@ const fetchProperties = async (isInitial = false) => {
     setErrors({});
     setEditingProperty(null);
     setShowForm(false);
+    setVideoProgress(null);
   };
 
   const handleAddProperty = async (propertyData) => {
@@ -152,7 +194,7 @@ const fetchProperties = async (isInitial = false) => {
         }
         setProperties((prev) => [res.data, ...prev]);
         notifySuccess(res.message || "Property added successfully");
-        fetchProperties(); // Update in background in case of backend changes
+        refreshList();
         if (refreshProperties) refreshProperties();
         return { success: true, data: res.data };
       }
@@ -167,37 +209,69 @@ const fetchProperties = async (isInitial = false) => {
   const handleUpdateProperty = async (id, propertyData) => {
     try {
       const formDataObj = new FormData();
+      const allowedFields = new Set(
+        Object.keys(propertyFormConfig.defaultFormData)
+      );
       Object.entries(propertyData).forEach(([key, value]) => {
+        if (!allowedFields.has(key)) return;
         if (Array.isArray(value))
           formDataObj.append(key, JSON.stringify(value));
         else formDataObj.append(key, value ?? "");
       });
       if (removedImages.length > 0)
         formDataObj.append("removedImages", JSON.stringify(removedImages));
-      if (removedVideos.length > 0)
-        formDataObj.append("removedVideos", JSON.stringify(removedVideos));
+
+      images.forEach((img) => formDataObj.append("images", img));
+
+      const pendingVideos = [...videos];
+      const videosToRemove = [...removedVideos];
       if (Object.keys(replaceMap).length > 0) {
         const mapPayload = {};
         Object.entries(replaceMap).forEach(([oldKey, file]) => {
           if (file.type.startsWith("image/")) {
             formDataObj.append("images", file);
+            mapPayload[oldKey] = file.name;
           } else if (file.type.startsWith("video/")) {
-            formDataObj.append("videos", file);
+            pendingVideos.push(file);
+            if (!videosToRemove.includes(oldKey)) {
+              videosToRemove.push(oldKey);
+            }
           }
-          mapPayload[oldKey] = file.name;
         });
-        formDataObj.append("replaceMap", JSON.stringify(mapPayload));
+        if (Object.keys(mapPayload).length > 0) {
+          formDataObj.append("replaceMap", JSON.stringify(mapPayload));
+        }
       }
-      images.forEach((img) => formDataObj.append("images", img));
-      videos.forEach((v) => formDataObj.append("videos", v));
+      if (pendingVideos[0]) {
+        const keysToClear =
+          videosToRemove.length > 0
+            ? videosToRemove
+            : existingVideos
+                .map((v) => v.masterKey || v.key)
+                .filter(Boolean);
+        formDataObj.append(
+          "removedVideos",
+          JSON.stringify(keysToClear.length ? keysToClear : ["__replace_video__"])
+        );
+      } else if (videosToRemove.length > 0) {
+        formDataObj.append("removedVideos", JSON.stringify(videosToRemove));
+      }
 
       const res = await propertiesAPI.updateProperty(id, formDataObj);
       if (res.success) {
+        if (pendingVideos[0]) {
+          setVideoProgress(0);
+          await uploadVideoInChunks({
+            propertyId: id,
+            file: pendingVideos[0],
+            onProgress: setVideoProgress,
+          });
+        }
         setProperties((prev) =>
           prev.map((prop) => (prop._id === id ? { ...res.data } : prop))
         );
         notifySuccess(res.message || "Property updated successfully");
-        fetchProperties(); // background sync
+        refreshList();
         if (refreshProperties) refreshProperties();
         return { success: true, data: res.data };
       }
@@ -214,7 +288,7 @@ const fetchProperties = async (isInitial = false) => {
       const response = await propertiesAPI.deleteProperty(id);
       if (response.success) {
         setProperties((prev) => prev.filter((prop) => prop._id !== id));
-        fetchProperties(); // background sync
+        refreshList();
         if (refreshProperties) refreshProperties();
         notifySuccess(response.message || "Property deleted successfully");
         return { success: true };
@@ -267,7 +341,7 @@ const fetchProperties = async (isInitial = false) => {
           setDeletedProperties((prev) =>
             prev.filter((prop) => prop._id !== id)
           );
-          fetchDeletedProperties();
+          refreshList();
           notifySuccess(response.message || "Property restored successfully");
           if (refreshProperties) refreshProperties();
           return { success: true };
@@ -286,11 +360,11 @@ const fetchProperties = async (isInitial = false) => {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
 
-    // Calculate how many more images can be added
     const remainingSlots = 20 - (existingImages.length + images.length);
 
     if (remainingSlots <= 0) {
       notifyWarning("You can only have a maximum of 20 images per property.");
+      e.target.value = "";
       return;
     }
 
@@ -307,17 +381,19 @@ const fetchProperties = async (isInitial = false) => {
       notifyWarning("Some images were too large or invalid and were skipped.");
     }
 
-    setImages((prev) => [...prev, ...validFiles]);
+    setImages((prev) => [
+      ...prev,
+      ...validFiles.map((file) => {
+        file.preview = URL.createObjectURL(file);
+        return file;
+      }),
+    ]);
+    e.target.value = "";
   };
 
  const handleVideoUpload = (e) => {
    const file = e.target.files[0];
-   if (file && file.size > 150 * 1024 * 1024) {
-     notifyWarning("Video size too large. Max 150MB allowed.");
-     e.target.value = "";
-     return;
-   }
-   if (file) setVideos((prev) => [...prev, file]);
+   if (file) setVideos([file]);
    e.target.value = "";
  };
 
@@ -349,7 +425,12 @@ const fetchProperties = async (isInitial = false) => {
 
   const handleReplaceImage = (e, oldKey) => {
     const file = e.target.files[0];
+    e.target.value = "";
     if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 15 * 1024 * 1024) {
+      notifyWarning("Each image must be 15MB or smaller.");
+      return;
+    }
     setReplaceMap((prev) => ({ ...prev, [oldKey]: file }));
     setExistingImages((prev) =>
       prev.map((img) =>
@@ -370,7 +451,13 @@ const fetchProperties = async (isInitial = false) => {
     setReplaceMap((prev) => ({ ...prev, [oldKey]: file }));
     setExistingVideos((prev) =>
       prev.map((v) =>
-        v.key === oldKey ? { ...v, preview: URL.createObjectURL(file) } : v
+        v.key === oldKey || v.masterKey === oldKey
+          ? {
+              ...v,
+              preview: URL.createObjectURL(file),
+              masterProxyUrl: "",
+            }
+          : v
       )
     );
   };
@@ -386,10 +473,13 @@ const fetchProperties = async (isInitial = false) => {
       }
     }
     if (videos.length > 0) {
-      const videoForm = new FormData();
-      videos.forEach((v) => videoForm.append("videos", v));
-      const res = await propertiesAPI.uploadVideos(propertyId, videoForm);
-      if (!res.status) {
+      setVideoProgress(0);
+      const res = await uploadVideoInChunks({
+        propertyId,
+        file: videos[0],
+        onProgress: setVideoProgress,
+      });
+      if (!res.success) {
         resetForm();
         throw new Error("Video upload failed");
       }
@@ -419,7 +509,6 @@ const fetchProperties = async (isInitial = false) => {
         result = await handleAddProperty(propertyData);
       }
       if (!result.success) throw result;
-      await fetchProperties();
       setShowForm(false);
       resetForm();
     } catch (error) {
@@ -494,9 +583,7 @@ const fetchProperties = async (isInitial = false) => {
   }
 
   // Video is not completed yet, so hide edit button
-  const isVideoCompleted = (property) => {
-    return property.videos[0]?.videoStatus === "completed" || property.videos[0]?.videoStatus === undefined || property.videos[0]?.videoStatus === "failed" || property.videos[0]?.videoStatus === "error";
-  };
+  const isVideoCompleted = () => true;
 
   // refresh button for video status visible
   const isRefreshVisible = (property) => {
@@ -512,8 +599,8 @@ const fetchProperties = async (isInitial = false) => {
       {/* Only initial load spinner */}
       {loading && properties.length === 0 ? (
         <div className="text-center py-10">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand"></div>
+          <p className="mt-2 text-muted">
             Loading properties...
           </p>
         </div>
@@ -522,8 +609,8 @@ const fetchProperties = async (isInitial = false) => {
           {error}
           <button
             aria-label="Try Again to fetch the property"
-            onClick={() => fetchProperties(properties.length === 0)}
-            className="ml-4 underline hover:text-blue-500 dark:hover:text-blue-400"
+            onClick={() => fetchProperties({ initial: properties.length === 0 })}
+            className="ml-4 underline hover:text-brand"
           >
             Try Again
           </button>
@@ -546,6 +633,8 @@ const fetchProperties = async (isInitial = false) => {
           onRowsPerPageChange={setLimit}
           onSearchChange={setSearchText}
           onSortChange={setSortConfig}
+          infiniteScrollOnMobile
+          isLoadingMore={loadingMore}
           searchPlaceholder={
             showDeleted
               ? "Search deleted properties..."
@@ -557,10 +646,10 @@ const fetchProperties = async (isInitial = false) => {
               icon: showDeleted ? RotateCcw : Plus,
               onClick: () =>
                 showDeleted
-                  ? (setShowDeleted(false), fetchProperties())
+                  ? (setShowDeleted(false), setPage(1))
                   : setShowForm(true),
               btnClass:
-                "flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors",
+                "flex items-center space-x-2 px-4 py-2 bg-brand hover:opacity-90 text-brand-fg rounded-lg transition-colors",
             },
             ...(!showDeleted
               ? [
@@ -569,7 +658,7 @@ const fetchProperties = async (isInitial = false) => {
                     icon: Trash2,
                     onClick: () => {
                       setShowDeleted(true);
-                      fetchDeletedProperties();
+                      setPage(1);
                     },
                     btnClass:
                       "flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors",
@@ -604,24 +693,23 @@ const fetchProperties = async (isInitial = false) => {
                 ]
               : [
                   {
-                    btnTitle: "",
-                    btnClass: "",
+                    btnTitle: "Edit",
+                    btnClass: "text-blue-400",
                     iconComponent: Edit,
-                    // check the status of the video
                     isVisible: (property) => isVideoCompleted(property),
                     btnAction: (property) => handleEdit(property),
                   },
                   {
-                    btnTitle: "refresh Video Status",
-                    btnClass: "text-purple-500 hover:text-purple-400",
+                    btnTitle: "Refresh",
+                    btnClass: "text-purple-400",
                     iconComponent: RotateCcw,
                     isVisible: (property) => isRefreshVisible(property),
                     btnAction: (property) =>
                       handleRefreshVideoStatus(property._id),
                   },
                   {
-                    btnTitle: "",
-                    btnClass: "text-red-500 hover:text-red-400",
+                    btnTitle: "Delete",
+                    btnClass: "text-red-400",
                     iconComponent: Trash2,
                     btnAction: (property) => handleDelete(property._id),
                   },
@@ -632,10 +720,10 @@ const fetchProperties = async (isInitial = false) => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60]">
+          <div className="bg-surface w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-lg sm:max-w-4xl sm:m-4 flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 sm:p-6 border-b border-line shrink-0">
+              <h3 className="text-lg sm:text-xl font-bold text-fg">
                 {editingProperty ? "Edit Property" : "Add New Property"}
               </h3>
               <button
@@ -644,13 +732,14 @@ const fetchProperties = async (isInitial = false) => {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="text-gray-400 hover:text-white"
+                className="text-muted hover:text-fg p-2 -mr-2"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto px-4 py-4 sm:p-6 space-y-6">
               <DynamicForm
                 formData={formData}
                 onChange={(updatedData) => {
@@ -660,45 +749,40 @@ const fetchProperties = async (isInitial = false) => {
               />
 
               {/* Media Section */}
-              <div className="space-y-4">
-                {/* Images */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-fg">Photos & video</h3>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Images (max 20 images, each ≤ 15MB)
-                  </label>
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-4">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="flex flex-col items-center justify-center cursor-pointer"
-                    >
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" /> Click to
-                      upload images
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <label className="text-sm font-medium text-muted">
+                      Photos
                     </label>
+                    <span className="text-xs text-muted">
+                      {existingImages.length + images.length} / 20
+                    </span>
                   </div>
 
-                  {/* Existing Images with Replace */}
-                  {existingImages.length > 0 && (
-                    <div className="mt-4">
-                      <h5 className="text-sm font-medium text-gray-300 mb-2">
-                        Existing Images
-                      </h5>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {existingImages.map((image, index) => (
-                          <div key={index} className="relative">
+                  {(existingImages.length > 0 || images.length > 0) && (
+                    <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {existingImages.map((image, index) => (
+                        <div
+                          key={image.key || index}
+                          className="overflow-hidden rounded-lg border border-line bg-raised"
+                        >
+                          <div className="relative">
                             <img
                               src={image.preview || image.presignUrl}
-                              alt={`Property Image ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
+                              alt={`Property photo ${index + 1}`}
+                              className="h-24 w-full object-cover"
                             />
-                            <label className="absolute bottom-1 left-1 bg-blue-600 text-white rounded px-2 py-1 cursor-pointer">
+                            {image.preview && (
+                              <span className="absolute left-1 top-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-medium text-brand-fg">
+                                Replaced
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex border-t border-line text-xs">
+                            <label className="flex-1 cursor-pointer py-1.5 text-center text-fg hover:bg-surface">
                               Replace
                               <input
                                 type="file"
@@ -718,59 +802,86 @@ const fetchProperties = async (isInitial = false) => {
                                   index
                                 )
                               }
-                              className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                              className="flex-1 border-l border-line py-1.5 text-red-600 hover:bg-surface"
                             >
-                              <Trash2 size={12} />
+                              Remove
                             </button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* New Images Preview */}
-                  {images.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        </div>
+                      ))}
                       {images.map((img, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(img)}
-                            alt={`New Upload ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
+                        <div
+                          key={`new-${index}`}
+                          className="overflow-hidden rounded-lg border border-line bg-raised"
+                        >
+                          <div className="relative">
+                            <img
+                              src={img.preview}
+                              alt={`New upload ${index + 1}`}
+                              className="h-24 w-full object-cover"
+                            />
+                            <span className="absolute left-1 top-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-medium text-brand-fg">
+                              New
+                            </span>
+                          </div>
                           <button
                             type="button"
                             aria-label="Remove the Image"
                             onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                            className="w-full border-t border-line py-1.5 text-xs text-red-600 hover:bg-surface"
                           >
-                            <Trash2 size={12} />
+                            Remove
                           </button>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  {existingImages.length + images.length < 20 ? (
+                    <div className="border-2 border-dashed border-line rounded-lg p-4">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="flex flex-col items-center justify-center cursor-pointer text-muted"
+                      >
+                        <Upload className="w-8 h-8 mb-2" />
+                        Click to add photos
+                        <span className="mt-1 text-xs">
+                          Up to 20 images, 15MB each
+                        </span>
+                      </label>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted">
+                      Maximum of 20 photos reached. Remove one to add another.
+                    </p>
+                  )}
                 </div>
 
-                {/* Videos */}
-                {/* 🎬 Videos Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Videos
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    Video
                   </label>
 
-                  {/* 🧩 If at least one valid existing video exists */}
-                  {existingVideos.length > 0 &&
-                  existingVideos.some((v) => v.masterProxyUrl) ? (
+                  {existingVideos.some((v) => v.masterProxyUrl || v.preview) ? (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {existingVideos.map((video, index) => (
                         <NeonVideoPlayer
                           key={video.key || video.id || index}
                           src={
-                            video.masterProxyUrl
+                            video.preview ||
+                            (video.masterProxyUrl
                               ? `${API}${video.masterProxyUrl}`
-                              : ""
+                              : "")
                           }
+                          className="aspect-video"
                           fullScreen={false}
                           showQualityNotice={false}
                           canEdit={
@@ -792,9 +903,33 @@ const fetchProperties = async (isInitial = false) => {
                         />
                       ))}
                     </div>
+                  ) : existingVideos.some((v) =>
+                      ["uploading", "queued", "processing"].includes(
+                        v.videoStatus
+                      )
+                    ) ? (
+                    <div className="mt-2 rounded-lg border border-line bg-surface/60 p-4 text-sm text-muted">
+                      <p>
+                        Video is {existingVideos[0]?.videoStatus || "processing"}.
+                        Wait for it to finish, or remove it to upload a new one.
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-3 rounded-md bg-red-600 px-3 py-2 text-white"
+                        onClick={() =>
+                          removeExistingVideo(
+                            existingVideos[0]?.masterKey ||
+                              existingVideos[0]?.key ||
+                              "__pending_video__",
+                            0
+                          )
+                        }
+                      >
+                        Remove video
+                      </button>
+                    </div>
                   ) : (
-                    // 📤 Show upload UI if no valid video exists
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 mt-2">
+                    <div className="border-2 border-dashed border-line rounded-lg p-4 mt-2">
                       <input
                         type="file"
                         accept="video/*"
@@ -806,9 +941,27 @@ const fetchProperties = async (isInitial = false) => {
                         htmlFor="video-upload"
                         className="flex flex-col items-center justify-center cursor-pointer"
                       >
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        <Upload className="w-8 h-8 text-muted mb-2" />
                         <span>Click to upload video</span>
+                        <span className="text-xs text-muted mt-1">
+                          Uploaded in chunks · processed as 480p, 720p and 1080p
+                        </span>
                       </label>
+                    </div>
+                  )}
+
+                  {videoProgress !== null && (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-muted mb-1">
+                        <span>Uploading video…</span>
+                        <span>{videoProgress}%</span>
+                      </div>
+                      <div className="h-2 bg-raised rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-brand transition-all duration-300"
+                          style={{ width: `${videoProgress}%` }}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -829,8 +982,8 @@ const fetchProperties = async (isInitial = false) => {
                   )}
                 </div>
               </div>
-              {/* Submit & Cancel */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-600">
+              </div>
+              <div className="shrink-0 border-t border-line px-4 py-3 sm:px-6 bg-surface flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button
                   type="button"
                   aria-label="Close Property Form"
@@ -838,7 +991,7 @@ const fetchProperties = async (isInitial = false) => {
                     setShowForm(false);
                     resetForm();
                   }}
-                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-raised hover:bg-line text-fg rounded-lg"
                 >
                   Cancel
                 </button>
@@ -846,14 +999,18 @@ const fetchProperties = async (isInitial = false) => {
                   type="submit"
                   aria-label="Save Property"
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-brand hover:opacity-90 text-brand-fg rounded-lg disabled:opacity-60"
                 >
-                  {isSubmitting ? "Saving..." : "Save"}
+                  {isSubmitting
+                    ? videoProgress !== null
+                      ? `Uploading video ${videoProgress}%`
+                      : "Saving..."
+                    : "Save"}
                 </button>
               </div>
 
               {errors.submit && (
-                <p className="text-red-500 mt-2">{errors.submit}</p>
+                <p className="text-red-500 px-4 pb-2">{errors.submit}</p>
               )}
             </form>
           </div>
@@ -862,24 +1019,22 @@ const fetchProperties = async (isInitial = false) => {
 
       {/* View Modal */}
       {viewingProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80 backdrop-blur-lg rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto border border-gray-700 animate-scaleUp">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
-              <h3 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60]">
+          <div className="bg-surface w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl sm:max-w-5xl sm:m-4 flex flex-col overflow-hidden border border-line">
+            <div className="flex justify-between items-center px-4 py-3 sm:p-6 border-b border-line shrink-0">
+              <h3 className="text-lg sm:text-2xl font-bold text-fg truncate pr-2">
                 Property Details
               </h3>
               <button
                 aria-label="Close Property Details"
                 onClick={() => setViewingProperty(null)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-muted hover:text-fg p-2 -mr-2 shrink-0"
               >
-                <X size={28} />
+                <X size={24} />
               </button>
             </div>
 
-            {/* Property Info */}
-            <div className="space-y-4 text-gray-200">
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:p-6 space-y-4 text-fg">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <p>
                   <strong>Title:</strong> {viewingProperty.title}
@@ -944,7 +1099,13 @@ const fetchProperties = async (isInitial = false) => {
                     {viewingProperty.videos.map((vid, idx) => (
                       <NeonVideoPlayer
                         key={idx}
-                        src={vid.presignUrl || vid.preview}
+                        src={
+                          vid.preview ||
+                          (vid.masterProxyUrl
+                            ? `${API}${vid.masterProxyUrl}`
+                            : vid.presignUrl || "")
+                        }
+                        poster={vid.thumbnail}
                         fullScreen={false}
                         canEdit={false}
                       />
@@ -954,12 +1115,11 @@ const fetchProperties = async (isInitial = false) => {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="flex justify-end pt-6 border-t border-gray-700 mt-6">
+            <div className="shrink-0 border-t border-line px-4 py-3 sm:px-6">
               <button
                 aria-label="Close Property Details"
                 onClick={() => setViewingProperty(null)}
-                className="px-6 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                className="w-full sm:w-auto px-6 py-2.5 bg-brand hover:opacity-90 text-brand-fg font-semibold rounded-lg"
               >
                 Close
               </button>

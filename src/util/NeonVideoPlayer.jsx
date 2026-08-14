@@ -60,6 +60,15 @@ const NeonVideoPlayer = ({
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
   const [qualityNotice, setQualityNotice] = useState(null);
+  const [usesNativeHls, setUsesNativeHls] = useState(false);
+
+  const isiOSDevice = (() => {
+    if (typeof navigator === "undefined") return false;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
+  })();
 
   // Reset source when prop changes
   useEffect(() => {
@@ -84,14 +93,33 @@ const NeonVideoPlayer = ({
       return;
     }
 
-    if (isHLS && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true });
+    const canNativeHls =
+      video.canPlayType("application/vnd.apple.mpegurl") !== "" ||
+      video.canPlayType("application/x-mpegURL") !== "";
+    const useNativeHls = isHLS && canNativeHls && (isiOSDevice || !Hls.isSupported());
+    setUsesNativeHls(useNativeHls);
+
+    if (isHLS && Hls.isSupported() && !useNativeHls) {
+      const hls = new Hls({
+        enableWorker: true,
+        startLevel: 0,
+        capLevelToPlayerSize: true,
+        maxBufferLength: 20,
+        maxMaxBufferLength: 40,
+        abrEwmaDefaultEstimate: 800000,
+      });
       hlsRef.current = hls;
       hls.loadSource(localSrc);
       hls.attachMedia(video);
 
-      // ✅ Wait until manifest is parsed, then autoplay
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        const lvls = (data?.levels || hls.levels || []).map((lv, index) => ({
+          index,
+          height: lv.height,
+          bitrate: lv.bitrate,
+        }));
+        setLevels(lvls);
+
         if (autoPlay) {
           video
             .play()
@@ -112,12 +140,14 @@ const NeonVideoPlayer = ({
       });
     } else {
       video.src = localSrc;
+      if (useNativeHls) setQualityLabel("Auto");
       if (autoPlay) {
-        video
-          .play()
-          .catch((err) =>
+        const playPromise = video.play();
+        if (playPromise?.catch) {
+          playPromise.catch((err) =>
             console.warn("Autoplay blocked by browser:", err.message)
           );
+        }
       }
     }
 
@@ -152,6 +182,7 @@ const NeonVideoPlayer = ({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+    let rafId = 0;
 
     const onLoaded = () => setDuration(v.duration || 0);
     const onPlay = () => {
@@ -159,7 +190,13 @@ const NeonVideoPlayer = ({
       pokeControls();
     };
     const onPause = () => setIsPlaying(false);
-    const onTime = () => setCurrent(v.currentTime);
+    const onTime = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        setCurrent(v.currentTime);
+        rafId = 0;
+      });
+    };
     const onEnd = () => setIsPlaying(false);
 
     v.addEventListener("loadedmetadata", onLoaded);
@@ -169,6 +206,7 @@ const NeonVideoPlayer = ({
     v.addEventListener("ended", onEnd);
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       v.removeEventListener("loadedmetadata", onLoaded);
       v.removeEventListener("play", onPlay);
       v.removeEventListener("pause", onPause);
@@ -255,6 +293,7 @@ const NeonVideoPlayer = ({
   }, [isTouchDevice]);
 
   useEffect(() => {
+    const video = videoRef.current;
     const onFsChange = () => {
       const isFs =
         !!document.fullscreenElement ||
@@ -263,19 +302,32 @@ const NeonVideoPlayer = ({
         !!document.msFullscreenElement;
       setIsFullscreen(isFs);
     };
+    const onBeginFs = () => setIsFullscreen(true);
+    const onEndFs = () => setIsFullscreen(false);
+
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("webkitfullscreenchange", onFsChange);
     document.addEventListener("mozfullscreenchange", onFsChange);
     document.addEventListener("MSFullscreenChange", onFsChange);
+    video?.addEventListener("webkitbeginfullscreen", onBeginFs);
+    video?.addEventListener("webkitendfullscreen", onEndFs);
     return () => {
       document.removeEventListener("fullscreenchange", onFsChange);
       document.removeEventListener("webkitfullscreenchange", onFsChange);
       document.removeEventListener("mozfullscreenchange", onFsChange);
       document.removeEventListener("MSFullscreenChange", onFsChange);
+      video?.removeEventListener("webkitbeginfullscreen", onBeginFs);
+      video?.removeEventListener("webkitendfullscreen", onEndFs);
     };
   }, []);
 
-  // Controls
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.setAttribute("playsinline", "true");
+    v.setAttribute("webkit-playsinline", "true");
+  }, []);
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -290,10 +342,7 @@ const NeonVideoPlayer = ({
     setMuted(next);
   };
 
-  const isIOS = (() => {
-    if (typeof navigator === "undefined") return false;
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  })();
+  const isIOS = isiOSDevice;
 
 
   const toggleFullscreen = async () => {
@@ -450,6 +499,7 @@ const NeonVideoPlayer = ({
     setLocalSrc(url);
     setIsLocalFile(true);
     onReplace?.(file);
+    e.target.value = "";
   };
 
   const handleDelete = () => {
@@ -461,14 +511,14 @@ const NeonVideoPlayer = ({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full bg-black rounded-xl overflow-hidden ${className}`}
+      className={`relative w-full bg-black rounded-xl overflow-hidden text-white ${className}`}
       onMouseMove={pokeControls}
       onDoubleClick={toggleFullscreen}
     >
       <video
         ref={videoRef}
         poster={poster}
-        className="w-full max-h-[85vh] object-contain bg-black z-0 rounded-md"
+        className="w-full max-h-[85vh] h-full object-contain bg-black z-0"
         style={{
           pointerEvents: "auto",
           display: "block",
@@ -477,13 +527,14 @@ const NeonVideoPlayer = ({
           WebkitTouchCallout: "none",
         }}
         playsInline
+        preload="metadata"
+        crossOrigin="anonymous"
         webkit-playsinline="true"
         x5-playsinline="true"
         muted={muted}
         onClick={togglePlay}
         onTouchStart={isTouchDevice ? handleDoubleTap : undefined}
         onDoubleClick={(e) => {
-          // Desktop double-click = fullscreen only if allowed
           if (!isTouchDevice && fullScreen) toggleFullscreen(e);
         }}
       />
@@ -519,6 +570,7 @@ const NeonVideoPlayer = ({
             className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium cursor-pointer bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:scale-105 transition-transform text-white"
           >
             <Replace size={16} />
+            <span>Replace</span>
             <input
               type="file"
               accept="video/*,.m3u8"
@@ -561,7 +613,7 @@ const NeonVideoPlayer = ({
             onChange={handleSeek}
             onMouseMove={handleHover}
             onMouseLeave={handleLeave}
-            className="w-full h-1 bg-gray-400 rounded-lg cursor-pointer appearance-none accent-white"
+            className="w-full h-1.5 bg-white/30 rounded-lg cursor-pointer appearance-none accent-brand"
           />
           {hoverTime !== null && (
             <div
@@ -602,7 +654,7 @@ const NeonVideoPlayer = ({
             </button>
             <button
               type="button"
-              aria-label="Replace"
+              aria-label="Replay video"
               onClick={handleReplay}
               className="p-2 hover:bg-white/15 rounded"
             >
@@ -634,6 +686,7 @@ const NeonVideoPlayer = ({
               value={volume}
               onChange={changeVolume}
               className="w-20 cursor-pointer accent-white hidden sm:block"
+              hidden={isIOS}
             />
 
             {/* Settings */}
@@ -665,7 +718,7 @@ const NeonVideoPlayer = ({
                         onClick={() => setShowSettings("speed")}
                       >
                         <span>Playback speed</span>
-                        <span className="text-gray-400">{playbackRate}x</span>
+                        <span className="text-white/60">{playbackRate}x</span>
                       </button>
                       <button
                         type="button"
@@ -674,7 +727,9 @@ const NeonVideoPlayer = ({
                         onClick={() => setShowSettings("quality")}
                       >
                         <span>Quality</span>
-                        <span className="text-gray-400">{qualityLabel}</span>
+                        <span className="text-white/60">
+                          {usesNativeHls ? "Auto" : qualityLabel}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -700,7 +755,7 @@ const NeonVideoPlayer = ({
                             setShowSettings("main");
                           }}
                           className={`px-4 py-2 text-left text-sm hover:bg-white/10 ${
-                            playbackRate === r ? "text-yellow-400" : ""
+                            playbackRate === r ? "text-brand" : ""
                           }`}
                         >
                           {r}x
@@ -722,6 +777,12 @@ const NeonVideoPlayer = ({
                         <span>Quality</span>
                       </button>
 
+                      {usesNativeHls ? (
+                        <p className="px-4 py-3 text-xs text-white/70">
+                          iPhone uses automatic quality for this video.
+                        </p>
+                      ) : (
+                        <>
                       {/* 🆕 Data Saver */}
                       <button
                         type="button"
@@ -742,7 +803,7 @@ const NeonVideoPlayer = ({
                           setShowSettings("main");
                         }}
                         className={`px-4 py-2 text-left hover:bg-white/10 ${
-                          qualityLabel === "Data Saver" ? "text-yellow-400" : ""
+                          qualityLabel === "Data Saver" ? "text-brand" : ""
                         }`}
                       >
                         Data Saver
@@ -757,7 +818,7 @@ const NeonVideoPlayer = ({
                           setShowSettings("main");
                         }}
                         className={`px-4 py-2 text-left hover:bg-white/10 ${
-                          qualityLabel === "Auto" ? "text-yellow-400" : ""
+                          qualityLabel === "Auto" ? "text-brand" : ""
                         }`}
                       >
                         Auto
@@ -775,13 +836,15 @@ const NeonVideoPlayer = ({
                           }}
                           className={`px-4 py-2 text-left hover:bg-white/10 ${
                             qualityLabel === `${lv.height}p`
-                              ? "text-yellow-400"
+                              ? "text-brand"
                               : ""
                           }`}
                         >
                           {lv.height ? `${lv.height}p` : `Level ${lv.index}`}
                         </button>
                       ))}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

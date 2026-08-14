@@ -108,15 +108,15 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
           placeholder={placeholder}
           value={value ? value : ""}
           onClick={toggleCalendar}
-          className="w-full px-3 py-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-600 bg-gray-800 text-gray-100 cursor-pointer"
+          className="w-full px-3 py-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand border border-line bg-raised text-fg cursor-pointer"
         />
         <span className="ml-2 cursor-pointer" onClick={toggleCalendar}>
-          <CalendarIcon size={20} className="text-gray-400" />
+          <CalendarIcon size={20} className="text-muted" />
         </span>
       </div>
 
       {showCalendar && (
-        <div className="absolute z-10 mt-1 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-lg w-72 text-gray-100">
+        <div className="absolute z-10 mt-1 p-3 bg-surface border border-line rounded-lg shadow-lg w-72 text-fg">
           {/* Header: different content depending on mode */}
           <div className="flex justify-between items-center mb-2">
             {mode === "day" && (
@@ -128,14 +128,14 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                     e.stopPropagation();
                     prevMonth();
                   }}
-                  className="px-2 py-1 rounded hover:bg-gray-700"
+                  className="px-2 py-1 rounded hover:bg-raised"
                 >
                   &lt;
                 </button>
 
                 <div
                   onClick={() => setMode("month")}
-                  className="cursor-pointer flex items-center gap-1 select-none text-gray-100 font-semibold"
+                  className="cursor-pointer flex items-center gap-1 select-none text-fg font-semibold"
                   style={{ userSelect: "none" }}
                 >
                   {/* Combined month + year with no button border */}
@@ -152,7 +152,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                     e.stopPropagation();
                     nextMonth();
                   }}
-                  className="px-2 py-1 rounded hover:bg-gray-700"
+                  className="px-2 py-1 rounded hover:bg-raised"
                 >
                   &gt;
                 </button>
@@ -170,12 +170,12 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                       new Date(newYear, currentMonth.getMonth(), 1)
                     );
                   }}
-                  className="px-2 py-1 rounded hover:bg-gray-700"
+                  className="px-2 py-1 rounded hover:bg-raised"
                 >
                   &lt;
                 </button>
                 
-                <div className="flex items-center gap-2 cursor-default select-none grow justify-center text-gray-100 font-semibold">
+                <div className="flex items-center gap-2 cursor-default select-none grow justify-center text-fg font-semibold">
                   <button
                     type="button"
                     aria-label="Current Year"
@@ -199,7 +199,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                       new Date(newYear, currentMonth.getMonth(), 1)
                     );
                   }}
-                  className="px-2 py-1 rounded hover:bg-gray-700"
+                  className="px-2 py-1 rounded hover:bg-raised"
                 >
                   &gt;
                 </button>
@@ -212,7 +212,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                   type="button"
                   aria-label="Previous Year Range"
                   onClick={() => prevYearRange()}
-                  className="px-2 py-1 rounded hover:bg-gray-700"
+                  className="px-2 py-1 rounded hover:bg-raised"
                 >
                   &lt;
                 </button>
@@ -223,7 +223,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                   type="button"
                   aria-label="Next Year Range"
                   onClick={() => nextYearRange()}
-                  className="px-2 py-1 rounded hover:bg-gray-700"
+                  className="px-2 py-1 rounded hover:bg-raised"
                 >
                   &gt;
                 </button>
@@ -238,7 +238,7 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
               {/* Weekday headers */}
               <div className="grid grid-cols-7 text-center font-medium mb-1">
                 {weekdays.map((day) => (
-                  <div key={day} className="text-gray-400 text-xs">
+                  <div key={day} className="text-muted text-xs">
                     {day}
                   </div>
                 ))}
@@ -254,16 +254,16 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                         if (!min || day >= min) handleDateClick(day);
                       }}
                       className={`p-2 rounded cursor-pointer text-center text-sm
-                      ${isSameDay(day, today) ? "bg-gray-700" : ""}
+                      ${isSameDay(day, today) ? "bg-raised" : ""}
                       ${
                         isSameDay(day, selectedDate)
-                          ? "bg-blue-600 text-white font-semibold"
+                          ? "bg-brand text-brand-fg font-semibold"
                           : ""
                       }
                       ${
                         min && day < min
-                          ? "text-gray-600 cursor-not-allowed"
-                          : "hover:bg-gray-700"
+                          ? "text-muted cursor-not-allowed"
+                          : "hover:bg-raised"
                       }
                       `}
                     >
@@ -294,8 +294,8 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                     }}
                     className={`cursor-pointer rounded p-2 ${
                       m === currentMonth.getMonth()
-                        ? "bg-blue-600 text-white font-semibold"
-                        : "hover:bg-gray-700"
+                        ? "bg-brand text-brand-fg font-semibold"
+                        : "hover:bg-raised"
                     }`}
                   >
                     {monthName}
@@ -318,8 +318,8 @@ const CustomDatePicker = ({value, onChange, minDate, placeholder = "YYYY-MM-DD" 
                     }}
                     className={`cursor-pointer rounded p-2 ${
                       yr === currentMonth.getFullYear()
-                        ? "bg-blue-600 text-white font-semibold"
-                        : "hover:bg-gray-700"
+                        ? "bg-brand text-brand-fg font-semibold"
+                        : "hover:bg-raised"
                     }`}
                   >
                     {yr}

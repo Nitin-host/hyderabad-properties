@@ -49,6 +49,9 @@ function TableUtil({
   onSortChange = () => {},
   onFilterChange = () => {},
 
+  infiniteScrollOnMobile = false,
+  isLoadingMore = false,
+
   // Other
   rowsPerPageOptions = [5, 10, 25, 50, 100],
   selectable = false,
@@ -70,6 +73,10 @@ function TableUtil({
 
   // Debounce ref for search
   const searchTimeout = useRef(null);
+  const loadMoreRef = useRef(null);
+
+  const useInfiniteScroll =
+    mobileView && infiniteScrollOnMobile && isServerPaginated;
 
   // Filter sync
   useEffect(() => {
@@ -235,8 +242,36 @@ function TableUtil({
     if (newPage > totalPages) newPage = totalPages;
     if (isServerPaginated) onPageChange && onPageChange(newPage);
     else setInternalPage(newPage);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!useInfiniteScroll) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
+
+  useEffect(() => {
+    if (!useInfiniteScroll) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        if (isLoading || isLoadingMore) return;
+        if (pageToDisplay >= totalPages) return;
+        onPageChange?.(pageToDisplay + 1);
+      },
+      { root: null, rootMargin: "240px", threshold: 0 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [
+    useInfiniteScroll,
+    isLoading,
+    isLoadingMore,
+    pageToDisplay,
+    totalPages,
+    onPageChange,
+  ]);
 
   // ------------------- Rows per page -------------------
   const handleRowsPerPage = (n) => {
@@ -317,7 +352,7 @@ function TableUtil({
 
     return (
       <div
-        className="text-sm text-muted-foreground dark:text-muted-foreground-dark truncate max-w-[100px]"
+        className="text-sm text-muted break-words max-w-[220px] md:max-w-[140px] md:truncate"
         title={displayVal}
       >
         {displayVal}
@@ -328,122 +363,118 @@ function TableUtil({
   // ------------------- Mobile Card & Skeleton -------------------
 const MobileCard = ({ row }) => {
   const [expanded, setExpanded] = useState(false);
-
-  const toggleExpand = () => setExpanded((prev) => !prev);
-
-  const visibleColumns = tableHeader.slice(0, 2); // show top 2 columns always
-  const hiddenColumns = tableHeader.slice(2); // hide the rest under accordion
+  const imageCol = tableHeader.find((col) => col.imageKey);
+  const titleCol = imageCol || tableHeader[0];
+  const otherColumns = tableHeader.filter((col) => col !== titleCol);
+  const previewColumns = otherColumns.slice(0, 3);
+  const extraColumns = otherColumns.slice(3);
+  const imageUrl = imageCol
+    ? getNestedValue(row, imageCol.imageKey)
+    : null;
+  const titleText = titleCol
+    ? getNestedValue(row, titleCol.textKey || titleCol.key)
+    : "";
 
   return (
-    <div className="mb-3 p-4 rounded-xl shadow-sm border border-border bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-100 transition-all duration-200">
-      {/* Checkbox (if selectable) */}
-      {selectable && (
-        <div className="flex justify-end mb-2">
-          <input
-            type="checkbox"
-            checked={selected.has(row[rowIdKey])}
-            onChange={() => toggleSelectRow(row[rowIdKey])}
-            className="accent-blue-600"
-          />
-        </div>
+    <div className="mb-3 rounded-xl border border-line bg-surface overflow-hidden">
+      {imageCol && (
+        <img
+          src={imageUrl || logo}
+          alt={titleText || "Property"}
+          className="w-full h-36 object-cover"
+        />
       )}
 
-      {/* Always visible columns */}
-      <div className="space-y-2">
-        {visibleColumns.map((colDef, idx) => (
-          <div
-            key={idx}
-            className="flex justify-between items-center border-b border-border/40 pb-1 last:border-b-0"
-          >
-            <span className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
-              {colDef.label}
-            </span>
-            <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px] text-right">
-              {renderCellValue(row, colDef)}
-            </span>
-          </div>
-        ))}
-      </div>
+      <div className="p-3">
+        {titleText && (
+          <h4 className="font-semibold text-fg text-base mb-2 leading-snug">
+            {titleText}
+          </h4>
+        )}
 
-      {/* Expandable Section */}
-      {hiddenColumns.length > 0 && (
-        <div
-          className={`overflow-hidden transition-all duration-300 ${
-            expanded ? "max-h-[500px] mt-2" : "max-h-0"
-          }`}
-        >
-          <div className="space-y-2 pt-2 border-t border-border/40">
-            {hiddenColumns.map((colDef, idx) => (
-              <div
-                key={idx}
-                className="flex justify-between items-center border-b border-border/30 pb-1 last:border-b-0"
-              >
-                <span className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
-                  {colDef.label}
-                </span>
-                <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px] text-right">
+        <div className="space-y-1.5">
+          {previewColumns.map((colDef, idx) => (
+            <div key={idx} className="flex justify-between gap-3 text-sm">
+              <span className="text-muted shrink-0">{colDef.label}</span>
+              <span className="text-fg text-right min-w-0 break-words">
+                {renderCellValue(row, {
+                  ...colDef,
+                  imageKey: undefined,
+                  textKey: undefined,
+                })}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {extraColumns.length > 0 && expanded && (
+          <div className="space-y-1.5 mt-2 pt-2 border-t border-line">
+            {extraColumns.map((colDef, idx) => (
+              <div key={idx} className="flex justify-between gap-3 text-sm">
+                <span className="text-muted shrink-0">{colDef.label}</span>
+                <span className="text-fg text-right min-w-0 break-words">
                   {renderCellValue(row, colDef)}
                 </span>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Toggle Button */}
-      {hiddenColumns.length > 0 && (
-        <button
-          arai-label={expanded ? "Hide Details" : "Show Details"}
-          onClick={toggleExpand}
-          className="mt-2 w-full flex items-center justify-center gap-1 text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
-        >
-          {expanded ? (
-            <>
-              Hide Details <ChevronUp size={14} />
-            </>
-          ) : (
-            <>
-              Show Details <ChevronDown size={14} />
-            </>
-          )}
-        </button>
-      )}
+        {extraColumns.length > 0 && (
+          <button
+            type="button"
+            aria-label={expanded ? "Hide Details" : "Show Details"}
+            onClick={() => setExpanded((prev) => !prev)}
+            className="mt-2 w-full flex items-center justify-center gap-1 text-brand text-sm font-medium py-2"
+          >
+            {expanded ? (
+              <>
+                Hide Details <ChevronUp size={14} />
+              </>
+            ) : (
+              <>
+                More Details <ChevronDown size={14} />
+              </>
+            )}
+          </button>
+        )}
 
-      {/* Actions */}
-      {tableActions.length > 0 && (
-        <div className="flex flex-wrap justify-end mt-3 gap-2">
-          {tableActions.map((action, idx) => {
-            const {
-              btnTitle,
-              btnClass,
-              iconComponent: Icon,
-              btnAction,
-              customRender,
-              isVisible,
-            } = action;
-            if (
-              (typeof isVisible === "function" && !isVisible(row)) ||
-              (typeof isVisible === "boolean" && !isVisible)
-            )
-              return null;
-            if (typeof customRender === "function")
-              return <span key={idx}>{customRender(row)}</span>;
-            return (
-              <button
-                key={idx}
-                aria-label={btnTitle}
-                className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium border border-border hover:bg-muted/40 transition-all ${
-                  btnClass || "text-blue-500"
-                }`}
-                onClick={() => btnAction(row)}
-                title={btnTitle}
-              >
-                {Icon ? <Icon size={14} /> : btnTitle}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        {tableActions.length > 0 && (
+          <div className="flex flex-wrap justify-stretch gap-2 mt-3">
+            {tableActions.map((action, idx) => {
+              const {
+                btnTitle,
+                btnClass,
+                iconComponent: Icon,
+                btnAction,
+                customRender,
+                isVisible,
+              } = action;
+              if (
+                (typeof isVisible === "function" && !isVisible(row)) ||
+                (typeof isVisible === "boolean" && !isVisible)
+              )
+                return null;
+              if (typeof customRender === "function")
+                return <span key={idx}>{customRender(row)}</span>;
+              return (
+                <button
+                  key={idx}
+                  aria-label={btnTitle || "Action"}
+                  className={`flex-1 min-w-[44px] min-h-10 inline-flex items-center justify-center gap-1 text-xs px-3 rounded-md font-medium bg-raised border border-line ${
+                    btnClass || "text-brand"
+                  }`}
+                  onClick={() => btnAction(row)}
+                  title={btnTitle}
+                >
+                  {Icon ? <Icon size={16} /> : null}
+                  {btnTitle ? <span>{btnTitle}</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -451,7 +482,7 @@ const MobileCard = ({ row }) => {
   const SkeletonRow = ({ cols }) => (
     <div className="animate-pulse grid grid-cols-1 gap-2">
       {[...Array(cols)].map((_, i) => (
-        <div key={i} className="h-6 bg-gray-700 rounded" />
+        <div key={i} className="h-6 bg-raised rounded" />
       ))}
     </div>
   );
@@ -460,28 +491,28 @@ const MobileCard = ({ row }) => {
   return (
     <div>
       {/* Header + Search + Create */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 p-3">
-        <h5 className="text-lg font-bold text-foreground dark:text-foreground-dark">
+      <div className="flex flex-col gap-3 p-2 sm:p-3 md:flex-row md:justify-between md:items-center">
+        <h5 className="text-base sm:text-lg font-bold text-fg">
           {tableName}
         </h5>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
           {searchKeys.length > 0 && (
             <input
-              type="text"
+              type="search"
               placeholder={searchPlaceholder || "Search..."}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="px-3 py-2 rounded border border-border bg-muted text-foreground placeholder-muted-foreground dark:bg-muted-dark dark:text-foreground-dark dark:placeholder-muted-foreground-dark w-full sm:w-64"
+              className="px-3 py-2.5 rounded-lg border border-line bg-raised text-fg placeholder-muted w-full sm:w-64 text-base"
             />
           )}
           {createBtn.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               {createBtn.map((btn, idx) => (
                 <button
                   key={idx}
                   aria-label={btn.title}
                   onClick={btn.onClick}
-                  className={`flex items-center justify-center gap-1 px-3 py-2 rounded w-full sm:w-auto text-xs sm:text-sm ${
+                  className={`flex items-center justify-center gap-1 px-3 py-2.5 rounded-lg w-full sm:w-auto text-sm ${
                     btn.btnClass || "bg-primary"
                   }`}
                   title={btn.title}
@@ -497,28 +528,42 @@ const MobileCard = ({ row }) => {
 
       {/* Table / Mobile Cards */}
       {mobileView ? (
-        isLoading ? (
-          [...Array(rowsPerPage)].map((_, i) => (
-            <div
-              key={i}
-              className="mb-3 p-4 border-l-4 rounded-lg shadow-sm bg-card"
-            >
-              <SkeletonRow cols={3} />
+        <>
+          {isLoading && pagedData.length === 0 ? (
+            [...Array(rowsPerPage)].map((_, i) => (
+              <div
+                key={i}
+                className="mb-3 p-4 border-l-4 rounded-lg shadow-sm bg-surface"
+              >
+                <SkeletonRow cols={3} />
+              </div>
+            ))
+          ) : pagedData.length === 0 ? (
+            <div className="text-center py-6 text-muted">
+              {emptyStateMessage}
             </div>
-          ))
-        ) : pagedData.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground dark:text-muted-foreground-dark">
-            {emptyStateMessage}
-          </div>
-        ) : (
-          pagedData.map((row) => (
-            <MobileCard key={row[rowIdKey] || row.id} row={row} />
-          ))
-        )
+          ) : (
+            pagedData.map((row) => (
+              <MobileCard key={row[rowIdKey] || row.id} row={row} />
+            ))
+          )}
+          {useInfiniteScroll && (
+            <div
+              ref={loadMoreRef}
+              className="py-4 text-center text-sm text-muted"
+            >
+              {isLoadingMore
+                ? "Loading more…"
+                : pageToDisplay >= totalPages && pagedData.length > 0
+                  ? "All properties loaded"
+                  : null}
+            </div>
+          )}
+        </>
       ) : (
         <div className="overflow-x-auto w-full">
-          <table className="min-w-full divide-y divide-border dark:divide-border-dark">
-            <thead className="sticky top-0 bg-card/80 backdrop-blur-sm z-10">
+          <table className="min-w-full divide-y divide-line">
+            <thead className="sticky top-0 bg-surface/80 backdrop-blur-sm z-10">
               <tr>
                 {selectable && (
                   <th className="px-6 py-3">
@@ -537,7 +582,7 @@ const MobileCard = ({ row }) => {
                   <th
                     key={idx}
                     style={colDef.width ? { width: colDef.width } : {}}
-                    className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground-dark uppercase tracking-wider cursor-pointer select-none"
+                    className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider cursor-pointer select-none"
                     onClick={() => handleSort(idx)}
                   >
                     <div className="flex items-center gap-1">
@@ -553,13 +598,13 @@ const MobileCard = ({ row }) => {
                   </th>
                 ))}
                 {tableActions.length > 0 && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground dark:text-muted-foreground-dark uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Actions
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="bg-card divide-y divide-border dark:bg-card-dark dark:divide-border-dark">
+            <tbody className="bg-surface divide-y divide-line">
               {isLoading ? (
                 [...Array(rowsPerPage)].map((_, i) => (
                   <tr key={i}>
@@ -582,7 +627,7 @@ const MobileCard = ({ row }) => {
                       (selectable ? 1 : 0) +
                       (tableActions.length > 0 ? 1 : 0)
                     }
-                    className="text-center py-6 text-muted-foreground dark:text-muted-foreground-dark"
+                    className="text-center py-6 text-muted"
                   >
                     {emptyStateMessage}
                   </td>
@@ -591,7 +636,7 @@ const MobileCard = ({ row }) => {
                 pagedData.map((row) => (
                   <tr
                     key={row[rowIdKey] || row.id}
-                    className="hover:bg-muted/20 dark:hover:bg-muted-dark/20"
+                    className="hover:bg-raised"
                   >
                     {selectable && (
                       <td className="px-6 py-3">
@@ -651,13 +696,14 @@ const MobileCard = ({ row }) => {
       )}
 
       {/* Pagination */}
-      <div className="flex flex-wrap justify-between items-center mt-6 px-3 gap-4">
-        <div className="flex items-center gap-2 text-sm mr-4">
-          <span>Rows per page:</span>
+      {!useInfiniteScroll && (
+      <div className="flex flex-col sm:flex-row sm:flex-wrap justify-between items-stretch sm:items-center mt-4 sm:mt-6 px-1 sm:px-3 gap-3">
+        <div className="flex items-center justify-between sm:justify-start gap-2 text-sm">
+          <span className="text-muted">Rows</span>
           <select
             value={rowsPerPage}
             onChange={(e) => handleRowsPerPage(Number(e.target.value))}
-            className="rounded border border-border dark:border-border-dark px-2 py-1 bg-gray-700 dark:bg-card-dark text-foreground dark:text-foreground-dark"
+            className="rounded border border-line px-2 py-2 bg-raised text-fg text-sm"
           >
             {rowsPerPageOptions.map((n) => (
               <option key={n} value={n}>
@@ -665,13 +711,16 @@ const MobileCard = ({ row }) => {
               </option>
             ))}
           </select>
+          <span className="sm:hidden text-muted ml-auto">
+            Page {pageToDisplay} of {totalPages}
+          </span>
         </div>
-        <div className="flex items-center gap-1 text-gray-300 flex-wrap">
+        <div className="flex items-center justify-center gap-1 text-muted flex-wrap">
           <button
-            aria-label="previous page"
+            aria-label="first page"
             disabled={pageToDisplay === 1}
             onClick={() => internalChangePage(1)}
-            className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="p-2.5 bg-raised rounded hover:bg-line disabled:opacity-50 hidden sm:inline-flex"
           >
             <ChevronsLeft size={16} />
           </button>
@@ -679,48 +728,51 @@ const MobileCard = ({ row }) => {
             aria-label="previous page"
             disabled={pageToDisplay === 1}
             onClick={() => internalChangePage(pageToDisplay - 1)}
-            className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="p-2.5 bg-raised rounded hover:bg-line disabled:opacity-50"
           >
             <ChevronLeft size={16} />
           </button>
-          {getPageNumbers(pageToDisplay, totalPages).map((pageNum, idx) =>
-            pageNum === "start-ellipsis" || pageNum === "end-ellipsis" ? (
-              <span key={idx} className="px-2 py-1 text-gray-400">
-                ...
-              </span>
-            ) : (
-              <button
-                aria-label={`Page ${pageNum}`}
-                key={idx}
-                onClick={() => internalChangePage(pageNum)}
-                className={`px-3 py-1 rounded-lg transition-colors ${
-                  pageNum === pageToDisplay
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
-              >
-                {pageNum}
-              </button>
-            )
-          )}
+          <div className="hidden sm:flex items-center gap-1">
+            {getPageNumbers(pageToDisplay, totalPages).map((pageNum, idx) =>
+              pageNum === "start-ellipsis" || pageNum === "end-ellipsis" ? (
+                <span key={idx} className="px-2 py-1 text-muted">
+                  ...
+                </span>
+              ) : (
+                <button
+                  aria-label={`Page ${pageNum}`}
+                  key={idx}
+                  onClick={() => internalChangePage(pageNum)}
+                  className={`px-3 py-1 rounded-lg transition-colors ${
+                    pageNum === pageToDisplay
+                      ? "bg-brand text-brand-fg"
+                      : "bg-raised text-muted hover:bg-line"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            )}
+          </div>
           <button
             disabled={pageToDisplay === totalPages}
             aria-label="next page"
             onClick={() => internalChangePage(pageToDisplay + 1)}
-            className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="p-2.5 bg-raised rounded hover:bg-line disabled:opacity-50"
           >
             <ChevronRight size={16} />
           </button>
           <button
-            aria-label="next page"
+            aria-label="last page"
             disabled={pageToDisplay === totalPages}
             onClick={() => internalChangePage(totalPages)}
-            className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="p-2.5 bg-raised rounded hover:bg-line disabled:opacity-50 hidden sm:inline-flex"
           >
             <ChevronsRight size={16} />
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -208,7 +208,7 @@ const DynamicForm = ({ formData, onChange, errors = {} }) => {
               {label}
               {required && " *"}
             </label>
-            <div className="flex gap-4 items-center">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
               {options.map((option) => (
                 <label key={option.value} className="flex items-center gap-2">
                   <input

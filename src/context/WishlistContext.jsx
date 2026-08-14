@@ -4,6 +4,8 @@ import { authAPI } from "../services/api";
 
 const WishlistContext = createContext();
 
+const sameId = (a, b) => String(a) === String(b);
+
 export const useWishlist = () => {
   const context = useContext(WishlistContext);
   if (!context) {
@@ -17,15 +19,13 @@ export const WishlistProvider = ({ children }) => {
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load favorites from API or localStorage
   useEffect(() => {
     const loadFavorites = async () => {
       setIsLoading(true);
       try {
         if (user) {
           const response = await authAPI.getFavorites();
-          // response.data is array of favorite property objects
-          setFavorites(response || []);
+          setFavorites(Array.isArray(response) ? response : []);
         } else {
           const storedFavorites = localStorage.getItem("favorites");
           setFavorites(storedFavorites ? JSON.parse(storedFavorites) : []);
@@ -41,66 +41,76 @@ export const WishlistProvider = ({ children }) => {
     loadFavorites();
   }, [user]);
 
-  // Persist favorites to localStorage
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem("favorites", JSON.stringify(favorites));
     }
   }, [favorites, isLoading]);
 
-  // Check if property is favorite
   const isFavorite = (propertyId) => {
-    if (!Array.isArray(favorites)) return false;
-    return favorites.some((fav) => fav._id === propertyId);
+    if (!Array.isArray(favorites) || !propertyId) return false;
+    return favorites.some((fav) => sameId(fav?._id || fav, propertyId));
   };
 
-  // Toggle favorite
   const toggleFavorite = async (propertyId) => {
+    const id = String(propertyId);
+    const prev = favorites;
+    const currentlyFav = isFavorite(id);
+
     try {
-      if (isFavorite(propertyId)) {
+      if (currentlyFav) {
+        setFavorites((list) =>
+          list.filter((fav) => !sameId(fav?._id || fav, id))
+        );
         if (user) {
-          await authAPI.removeFromFavorites(propertyId);
+          await authAPI.removeFromFavorites(id);
         }
-        setFavorites(favorites.filter(fav => fav._id.toString() !== propertyId.toString()));
       } else {
+        setFavorites((list) =>
+          list.some((fav) => sameId(fav?._id || fav, id))
+            ? list
+            : [...list, { _id: id }]
+        );
         if (user) {
-          await authAPI.addToFavorites(propertyId);
-          // fetch full object from API
-          const updatedFavorites = await authAPI.getFavorites();
-          setFavorites(updatedFavorites || []);
-        } else {
-          // For guest, just store the ID
-          setFavorites([...favorites, { _id: propertyId }]);
+          await authAPI.addToFavorites(id);
         }
       }
     } catch (err) {
       console.error("Error toggling favorite:", err);
+      setFavorites(prev);
     }
   };
 
-  // Sync favorites on login
   const syncFavoritesOnLogin = async () => {
     try {
-      const localFavoritesIds = favorites.map(f => f._id);
+      const localFavoritesIds = favorites.map((f) => String(f._id || f));
       const response = await authAPI.getFavorites();
-      const userFavorites = response.data || [];
-      // Add any local favorites not already in user favorites
+      const userFavorites = Array.isArray(response) ? response : [];
       for (const fId of localFavoritesIds) {
-        if (!userFavorites.some(f => f._id.toString() === fId.toString())) {
+        if (
+          fId &&
+          !userFavorites.some((f) => sameId(f._id, fId))
+        ) {
           await authAPI.addToFavorites(fId);
         }
       }
-
-      // Update state with merged list
-      const merged = [...userFavorites, ...favorites.filter(f => !userFavorites.some(uf => uf._id.toString() === f._id.toString()))];
-      setFavorites(merged);
+      const merged = await authAPI.getFavorites();
+      setFavorites(Array.isArray(merged) ? merged : userFavorites);
     } catch (err) {
       console.error("Error syncing favorites:", err);
     }
   };
 
   return (
-    <WishlistContext.Provider value={{ favorites, isLoading, isFavorite, toggleFavorite, syncFavoritesOnLogin }}>
+    <WishlistContext.Provider
+      value={{
+        favorites,
+        isLoading,
+        isFavorite,
+        toggleFavorite,
+        syncFavoritesOnLogin,
+      }}
+    >
       {children}
     </WishlistContext.Provider>
   );
