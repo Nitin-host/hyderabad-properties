@@ -15,7 +15,7 @@ import { createSlug } from '../util/CreateSlug';
 
 // ...rest of imports remain same
 
-const PropertyCard = ({ property, onToggleFavorite }) => {
+const PropertyCard = ({ property, onToggleFavorite, priority = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useWishlist();
@@ -27,6 +27,12 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
     if (price >= 10000000) return `₹${(price / 10000000).toFixed(1)} Cr`;
     if (price >= 100000) return `₹${(price / 100000).toFixed(1)} L`;
     return `₹${price.toLocaleString()}`;
+  };
+
+  const goToDetails = () => {
+    if (isSold) return;
+    const slug = property.slug || createSlug(property);
+    navigate(`/property/${slug}`);
   };
 
   const nextImage = () => {
@@ -50,21 +56,30 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
       ? property.images[currentImageIndex]?.presignUrl
       : "";
 
-  const isSold = property.status.toLowerCase() === "sold" || property.status.toLowerCase() === "occupied" || property.status.toLowerCase() === "rented";
+  const isSold =
+    ["sold", "occupied", "rented"].includes(
+      (property.status || "").toLowerCase()
+    );
 
   return (
     <div
-      className={`mt-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden ${
-        isSold ? "bg-gray-700 opacity-70 cursor-not-allowed" : "bg-gray-800"
+      className={`h-full flex flex-col rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-line ${
+        isSold ? "bg-raised opacity-70 cursor-not-allowed" : "bg-surface"
       }`}
     >
       {/* Image Section */}
-      <div className="relative h-50 overflow-hidden">
+      <div
+        className={`relative h-48 w-full shrink-0 overflow-hidden ${
+          isSold ? "" : "cursor-pointer"
+        }`}
+        onClick={goToDetails}
+        role={isSold ? undefined : "link"}
+      >
         <LazyLoadImage
           src={currentImage || logo}
           alt={property.title}
-          loading="eager"
-          fetchPriority="high"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "low"}
           effect={currentImage ? "blur" : undefined}
           className={`w-full h-full object-cover transition-transform duration-300 ${
             !isSold ? "hover:scale-105" : ""
@@ -140,7 +155,10 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
             <button
               name="left-arrow"
               aria-label='Left arrow to change the images'
-              onClick={prevImage}
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70 transition-all"
             >
               ‹
@@ -148,7 +166,10 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
             <button
               name="right-arrow"
               aria-label='Right arrow to change the images'
-              onClick={nextImage}
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70 transition-all"
             >
               ›
@@ -158,92 +179,81 @@ const PropertyCard = ({ property, onToggleFavorite }) => {
       </div>
 
       {/* Content Section */}
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-xl font-bold text-white">
-            {formatPrice(property.price)}
-          </h3>
-        </div>
-        <h4 className="text-lg font-semibold text-gray-200 mb-2 truncate">
+      <div className="p-4 flex flex-col flex-1 min-h-0">
+        <h3 className="text-xl font-bold text-fg mb-1 leading-7 truncate">
+          {formatPrice(property.price)}
+        </h3>
+        <h4
+          className="text-lg font-semibold text-fg mb-2 leading-6 h-12 line-clamp-2"
+          title={property.title}
+        >
           {property.title}
         </h4>
-        <div className="flex items-center text-gray-400 mb-3">
-          <MapPin size={16} className="mr-1" />
+        <div className="flex items-center text-muted mb-3 h-5 min-w-0">
+          <MapPin size={16} className="mr-1 shrink-0" />
           <span className="text-sm truncate">
-            {property?.location}, {property?.landmarks}
+            {[property?.location, property?.landmarks].filter(Boolean).join(", ")}
           </span>
         </div>
 
-        {/* Property Details */}
-        <div className="flex items-center justify-between text-sm text-gray-400 mb-3 space-x-4 overflow-hidden">
-          <div className="flex items-center flex-shrink-0 min-w-[50px]">
-            <Bed size={16} className="mr-1 flex-shrink-0" />
-            <span className="truncate max-w-[40px] block">
-              {property.bedrooms}
-            </span>
+        <div className="flex items-center justify-between text-sm text-muted mb-3 gap-2 h-5 overflow-hidden">
+          <div className="flex items-center min-w-0">
+            <Bed size={16} className="mr-1 shrink-0" />
+            <span className="truncate">{property.bedrooms}</span>
           </div>
-          <div className="flex items-center flex-shrink-0 min-w-[70px]">
-            <Square size={16} className="mr-1 flex-shrink-0" />
-            <span className="truncate max-w-[60px] block">
+          <div className="flex items-center min-w-0">
+            <Square size={16} className="mr-1 shrink-0" />
+            <span className="truncate">
               {property.size} {property.sizeUnit}
             </span>
           </div>
           {property.parking && (
-            <div className="flex items-center flex-shrink-0 min-w-[80px]">
-              <SquareParking size={16} className="mr-1 flex-shrink-0" />
-              <span className="truncate max-w-[70px] block">
-                {capitalizeFirst(property.parking)}
-              </span>
+            <div className="flex items-center min-w-0">
+              <SquareParking size={16} className="mr-1 shrink-0" />
+              <span className="truncate">{capitalizeFirst(property.parking)}</span>
             </div>
           )}
         </div>
 
-        {/* Amenities Preview */}
-        {property.amenities?.length > 0 ? (
-          <div className="mb-3 flex gap-2 overflow-hidden whitespace-nowrap">
-            {property.amenities.slice(0, 3).map((amenity, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded inline-block truncate max-w-max"
-                title={amenity} // optional: show full text on hover
-              >
-                {amenity}
-              </span>
-            ))}
-            {property.amenities.length > 3 && (
-              <span className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded inline-block">
-                +{property.amenities.length - 3} more
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="mb-3">
-            <span className="text-xs text-gray-500 italic">
+        <div className="mb-3 h-7 flex items-center gap-2 overflow-hidden">
+          {property.amenities?.length > 0 ? (
+            <>
+              {property.amenities.slice(0, 3).map((amenity, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 text-xs bg-raised text-muted rounded shrink-0 max-w-[7rem] truncate"
+                  title={amenity}
+                >
+                  {amenity}
+                </span>
+              ))}
+              {property.amenities.length > 3 && (
+                <span className="px-2 py-1 text-xs bg-raised text-muted rounded shrink-0">
+                  +{property.amenities.length - 3} more
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-muted italic">
               No amenities listed
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Action Button */}
-        <div className="flex space-x-2">
+        <div className="mt-auto">
           <button
             name="property-details"
             aria-label="View Property Details"
             onClick={() => {
               if (!isSold) {
-                const propertyId =
-                  property._id?.$oid || property._id || property.id;
-                const slug = !property.slug
-                  ? createSlug(property)
-                  : property.slug;
-                navigate(`/property/${slug || property.slug}`);
+                goToDetails();
               }
             }}
             disabled={isSold}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+            className={`w-full py-2.5 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
               isSold
-                ? "bg-gray-500 text-gray-300 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
+                ? "bg-raised text-muted cursor-not-allowed"
+                : "bg-brand hover:opacity-90 text-brand-fg"
             }`}
           >
             View Details

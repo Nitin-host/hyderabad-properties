@@ -9,7 +9,7 @@ const createContainer = () => {
     container = document.createElement("div");
     container.id = "notification-root";
     container.className =
-      "fixed top-5 right-5 z-[9999] flex flex-col gap-2 items-end";
+      "fixed top-5 right-5 z-[10050] flex flex-col gap-2 items-end";
     document.body.appendChild(container);
   }
   return container;

@@ -38,17 +38,19 @@ const ContactPage = () => {
     }
   };
 
+  const fieldClass =
+    "w-full border border-line rounded-lg px-4 py-3 bg-raised text-fg placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition";
+
   return (
-    <div className="flex justify-center items-center px-4 py-10 bg-gray-800 min-h-screen">
-      <div className="w-full max-w-2xl bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white rounded-2xl shadow-lg p-8 md:p-12">
+    <div className="flex justify-center items-center px-4 py-10 min-h-screen bg-page">
+      <div className="w-full max-w-2xl bg-surface text-fg rounded-2xl shadow-lg border border-line p-8 md:p-12">
         <h2 className="text-3xl font-extrabold text-center mb-6">
           Contact Us
         </h2>
-        <p className="text-gray-400 text-center mb-8">
+        <p className="text-muted text-center mb-8">
           Fill in your details and we’ll get back to you shortly.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Name */}
           <div>
             <label className="block mb-2 text-sm font-medium">Full Name</label>
             <input
@@ -57,12 +59,11 @@ const ContactPage = () => {
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter your name"
-              className="w-full border border-gray-600 rounded-lg px-4 py-3 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={fieldClass}
               required
             />
           </div>
 
-          {/* Email */}
           <div>
             <label className="block mb-2 text-sm font-medium">Email Address</label>
             <input
@@ -71,12 +72,11 @@ const ContactPage = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
-              className="w-full border border-gray-600 rounded-lg px-4 py-3 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={fieldClass}
               required
             />
           </div>
 
-          {/* Phone */}
           <div>
             <label className="block mb-2 text-sm font-medium">Phone Number</label>
             <PhoneInputDropdown
@@ -87,7 +87,6 @@ const ContactPage = () => {
             />
           </div>
 
-          {/* Property Type */}
           <div>
             <label className="block mb-2 text-sm font-medium">Property Type</label>
             <select
@@ -95,24 +94,23 @@ const ContactPage = () => {
               value={formData.propertyType}
               onChange={handleChange}
               required
-              className="w-full border border-gray-600 rounded-lg px-4 py-3 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={fieldClass}
             >
               <option value="" disabled>
                 Select Property Type
               </option>
               {propertyOptions.map((type) => (
-                <option key={type} value={type} className="text-black">
+                <option key={type} value={type}>
                   {type}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             aria-label="Submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-4 py-3 transition transform hover:scale-105 shadow-md"
+            className="w-full bg-brand hover:opacity-90 text-brand-fg font-semibold rounded-lg px-4 py-3 transition shadow-md"
           >
             Submit
           </button>

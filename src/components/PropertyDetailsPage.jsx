@@ -1,15 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { propertiesAPI } from '../services/api';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { useWishlist } from '../context/WishlistContext';
-import PropertyShare from './PropertyShare';
-import StickyWhatsApp from './StickyWhatsApp.jsx';
-import logo from '../assets/RR_PROP_LOGO.png'
-import { Play } from 'lucide-react';
-import NeonVideoPlayer from '../util/NeonVideoPlayer.jsx';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
-import PropertySEONoDep from './PropertySEO.jsx';
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { propertiesAPI } from "../services/api";
+import { useWishlist } from "../context/WishlistContext";
+import PropertyShare from "./PropertyShare";
+import StickyWhatsApp from "./StickyWhatsApp.jsx";
+import logo from "../assets/RR_PROP_LOGO.png";
+import {
+  Play,
+  Pause,
+  Heart,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+  Video,
+  House,
+  ClipboardList,
+  Sparkles,
+  Building2,
+  Layers,
+  Tag,
+  CalendarClock,
+  Maximize2,
+  Sofa,
+  BedDouble,
+  Bath,
+  DoorOpen,
+  IndianRupee,
+} from "lucide-react";
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import PropertySEONoDep from "./PropertySEO.jsx";
+
+const NeonVideoPlayer = lazy(() => import("../util/NeonVideoPlayer.jsx"));
 
 const PropertyDetailsPage = () => {
   // const { id } = useParams();
@@ -26,6 +48,7 @@ const PropertyDetailsPage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [mediaTab, setMediaTab] = useState("photos");
   const thumbnailsRef = useRef(null);
 
 
@@ -64,18 +87,22 @@ const PropertyDetailsPage = () => {
 
 
 useEffect(() => {
+  const controller = new AbortController();
+
   const fetchProperty = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const extractedId = slug.split("-").pop();
       const isObjectId = /^[a-fA-F0-9]{24}$/.test(extractedId);
+      const config = { signal: controller.signal };
 
       if (!isObjectId) {
-        const slugResponse = await propertiesAPI.getSlug(slug);
+        const slugResponse = await propertiesAPI.getSlug(slug, config);
         setProperty(slugResponse.data);
       } else {
-        const response = await propertiesAPI.getById(extractedId);
+        const response = await propertiesAPI.getById(extractedId, config);
         const fetchedProperty = response.data;
 
         const blockedStatuses = ["sold", "rented", "occupied"];
@@ -88,23 +115,26 @@ useEffect(() => {
         setProperty(fetchedProperty);
       }
     } catch (err) {
+      if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") return;
       setError("Failed to load property details");
       console.error("Error fetching property:", err);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   };
 
   if (slug) {
     fetchProperty();
   }
+
+  return () => controller.abort();
 }, [slug, navigate]);
 
 
 
   // Auto-slide effect for images
   useEffect(() => {
-    if (autoSlide && property?.images?.length > 1) {
+    if (autoSlide && mediaTab === "photos" && property?.images?.length > 1) {
       autoSlideIntervalRef.current = setInterval(() => {
         nextImage();
       }, 3000); // Change image every 3 seconds
@@ -115,7 +145,7 @@ useEffect(() => {
         clearInterval(autoSlideIntervalRef.current);
       }
     };
-  }, [autoSlide, property, currentImageIndex]);
+  }, [autoSlide, mediaTab, property, currentImageIndex]);
 
   useEffect(() => {
     if (thumbnailsRef.current && property?.images?.length > 0) {
@@ -181,8 +211,9 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-page">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand"></div>
+        <p className="mt-4 text-muted">Loading property details...</p>
       </div>
     );
   }
@@ -195,7 +226,7 @@ useEffect(() => {
           <button
             aria-label='To go back to the Properties'
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-brand text-brand-fg px-4 py-2 rounded-lg hover:opacity-90"
           >
             Back to Properties
           </button>
@@ -227,12 +258,25 @@ useEffect(() => {
   const hasVideo = Boolean(
     video?.masterProxyUrl && video.masterProxyUrl.trim() !== ""
   );
+  const hasImages = property.images?.length > 0;
+  const showMediaTabs = hasImages && hasVideo;
 
+  const formatPrice = (price) => {
+    if (price >= 10000000) return `₹${(price / 10000000).toFixed(1)} Cr`;
+    if (price >= 100000) return `₹${(price / 100000).toFixed(1)} L`;
+    return `₹${Number(price || 0).toLocaleString()}`;
+  };
+
+  const detailTabs = [
+    { id: "overview", label: "Overview", icon: House },
+    { id: "details", label: "Details", icon: ClipboardList },
+    { id: "amenities", label: "Amenities", icon: Sparkles },
+    { id: "location", label: "Location", icon: MapPin },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-page">
       <StickyWhatsApp />
-      {/* Inject SEO for this property (only once, when property exists) */}
       {property && (
         <PropertySEONoDep
           property={property}
@@ -241,386 +285,410 @@ useEffect(() => {
           }
         />
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Property Title and Price */}
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-            {property.title}
-          </h1>
-          <p className="text-xl sm:text-2xl font-semibold text-blue-400">
-            ₹{property.price?.toLocaleString()}
-          </p>
-          <p className="text-gray-300 mt-2 text-sm sm:text-base">
-            {property.location} {property.landmark}
-          </p>
-          <div className="fixed bottom-19 right-4 z-50">
-            <PropertyShare propertyId={property.slug ? property.slug : slug} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-fg"
+        >
+          <ChevronLeft size={16} /> Back to listings
+        </button>
+
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-fg mb-1">
+              {property.title}
+            </h1>
+            <p className="text-2xl font-semibold text-brand">
+              {formatPrice(property.price)}
+            </p>
+            <p className="text-muted mt-2 text-sm sm:text-base flex items-center gap-1.5">
+              <MapPin size={16} className="shrink-0" />
+              <span>
+                {[property.location, property.landmarks || property.landmark]
+                  .filter(Boolean)
+                  .join(", ")}
+              </span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              aria-label={
+                isFavorite(property._id)
+                  ? "Remove from Favorites"
+                  : "Add to Favorites"
+              }
+              onClick={handleFavoriteToggle}
+              className="p-2.5 rounded-full border border-line bg-surface hover:bg-raised"
+            >
+              <Heart
+                size={18}
+                className={
+                  isFavorite(property._id)
+                    ? "fill-red-500 text-red-500"
+                    : "text-muted"
+                }
+              />
+            </button>
+            <div className="rounded-full border border-line bg-surface">
+              <PropertyShare
+                propertyId={property.slug ? property.slug : slug}
+              />
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Left Column - Images and Videos */}
-          <div className="lg:col-span-2">
-            {/* Images Section */}
-            {property.images && property.images.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Images</h2>
-                <div className="relative">
-                  <img
-                    src={
-                      property.images[currentImageIndex]?.presignUrl?.trim() ||
-                      logo
-                    }
-                    alt={
-                      property.images[currentImageIndex]?.caption ||
-                      property.title
-                    }
-                    className="w-full h-56 sm:h-72 md:h-96 lg:h-[28rem] xl:h-[34rem] object-cover object-center rounded-lg cursor-pointer"
-                    onClick={() => {
-                      setModalImageIndex(currentImageIndex);
-                      setIsImageModalOpen(true);
-                    }}
-                  />
-                  {/* <button
-                    onClick={() => openImageModal(currentImageIndex)}
-                    className="absolute bottom-4 right-4"
-                  >
-                    ⛶
-                  </button> */}
-
-                  {property.images.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevImage}
-                        aria-label="Left arrow to change the images"
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-                      >
-                        <ChevronLeftIcon className="h-6 w-6" />
-                      </button>
-                      <button
-                        aria-label="Right arrow to change the images"
-                        onClick={nextImage}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-                      >
-                        <ChevronRightIcon className="h-6 w-6" />
-                      </button>
-
-                      {/* Auto-slide control */}
-                      <button
-                        aria-label={autoSlide ? "Pause Slideshow" : "Play Slideshow"}
-                        onClick={toggleAutoSlide}
-                        className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm hover:bg-opacity-75"
-                      >
-                        {autoSlide ? "Pause Slideshow" : "Play Slideshow"}
-                      </button>
-
-                      {/* Favorite button */}
-                      <button
-                        aria-label={isFavorite(property._id) ? "Remove from Favorites" : "Add to Favorites"}
-                        onClick={handleFavoriteToggle}
-                        className="absolute top-4 right-4 bg-white bg-opacity-80 p-2 rounded-full hover:bg-opacity-100"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className={`h-6 w-6 ${
-                            isFavorite(property._id)
-                              ? "text-red-500 fill-red-500"
-                              : "text-gray-600"
-                          }`}
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                          />
-                        </svg>
-                      </button>
-                    </>
-                  )}
-                </div>
-                {isImageModalOpen && (
-                  <div
-                    className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-                    onTouchStart={(e) =>
-                      (window.touchStartX = e.changedTouches[0].screenX)
-                    }
-                    onTouchEnd={(e) => {
-                      const touchEndX = e.changedTouches[0].screenX;
-                      const deltaX = window.touchStartX - touchEndX;
-
-                      if (deltaX > 50) {
-                        // Swipe left → next image
-                        setModalImageIndex(
-                          (modalImageIndex + 1) % property.images.length
-                        );
-                      } else if (deltaX < -50) {
-                        // Swipe right → previous image
-                        setModalImageIndex(
-                          (modalImageIndex - 1 + property.images.length) %
-                            property.images.length
-                        );
-                      }
-                    }}
-                  >
-                    {/* Close button */}
+          {/* Left Column - Media and description */}
+          <div className="lg:col-span-2 space-y-6">
+            {(hasImages || hasVideo) && (
+              <div className="rounded-2xl border border-line bg-surface overflow-hidden">
+                {showMediaTabs && (
+                  <div className="flex gap-1 p-2 border-b border-line bg-raised/50">
                     <button
-                      aria-label="Close Image Modal"
-                      onClick={closeImageModal}
-                      className="absolute top-4 right-4 text-white text-2xl"
+                      type="button"
+                      onClick={() => setMediaTab("photos")}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                        mediaTab === "photos"
+                          ? "bg-brand text-brand-fg"
+                          : "text-muted hover:text-fg hover:bg-surface"
+                      }`}
                     >
-                      ✕
+                      <ImageIcon size={16} /> Photos
                     </button>
-
-                    {/* Image */}
-                    <LazyLoadImage
-                      src={property.images[modalImageIndex]?.presignUrl || logo}
-                      alt="Expanded"
-                      effect="blur"
-                      className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-                    />
-                    {/* <img
-                      src={property.images[modalImageIndex]?.presignUrl || logo}
-                      alt="Expanded"
-                      className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-                    /> */}
-
-                    {/* Desktop-only arrows */}
                     <button
-                      aria-label="Left arrow to change the images"
+                      type="button"
+                      onClick={() => {
+                        setMediaTab("video");
+                        setAutoSlide(false);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                        mediaTab === "video"
+                          ? "bg-brand text-brand-fg"
+                          : "text-muted hover:text-fg hover:bg-surface"
+                      }`}
+                    >
+                      <Video size={16} /> Video
+                    </button>
+                  </div>
+                )}
+
+                {(!showMediaTabs || mediaTab === "photos") && hasImages && (
+                  <div>
+                    <div className="relative group">
+                      <img
+                        src={
+                          property.images[currentImageIndex]?.presignUrl?.trim() ||
+                          logo
+                        }
+                        alt={
+                          property.images[currentImageIndex]?.caption ||
+                          property.title
+                        }
+                        className="w-full h-56 sm:h-72 md:h-96 lg:h-[28rem] object-cover object-center cursor-zoom-in"
+                        onClick={() => openImageModal(currentImageIndex)}
+                      />
+
+                      {property.images.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={prevImage}
+                            aria-label="Previous image"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/55 text-white p-2 rounded-full hover:bg-black/75"
+                          >
+                            <ChevronLeft size={22} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={nextImage}
+                            aria-label="Next image"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/55 text-white p-2 rounded-full hover:bg-black/75"
+                          >
+                            <ChevronRight size={22} />
+                          </button>
+                          <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                            <button
+                              type="button"
+                              aria-label={
+                                autoSlide ? "Pause slideshow" : "Play slideshow"
+                              }
+                              onClick={toggleAutoSlide}
+                              className="bg-black/55 text-white p-2 rounded-full hover:bg-black/75"
+                            >
+                              {autoSlide ? (
+                                <Pause size={16} />
+                              ) : (
+                                <Play size={16} />
+                              )}
+                            </button>
+                            <span className="bg-black/55 text-white text-xs px-2.5 py-1 rounded-full">
+                              {currentImageIndex + 1} / {property.images.length}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {property.images.length > 1 && (
+                      <div
+                        ref={thumbnailsRef}
+                        className="flex gap-2 p-3 overflow-x-auto"
+                      >
+                        {property.images.map((image, index) => (
+                          <button
+                            type="button"
+                            aria-label={`View image ${index + 1}`}
+                            key={image._id || index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 ${
+                              index === currentImageIndex
+                                ? "border-brand"
+                                : "border-transparent opacity-80 hover:opacity-100"
+                            }`}
+                          >
+                            <LazyLoadImage
+                              src={image.presignUrl || logo}
+                              alt={image.key || `Image ${index + 1}`}
+                              effect="blur"
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(mediaTab === "video" || (!hasImages && hasVideo)) && (
+                  <div className="bg-black">
+                    {!isVideoPlaying ? (
+                      <button
+                        type="button"
+                        className="relative w-full aspect-video group"
+                        onClick={() => setIsVideoPlaying(true)}
+                      >
+                        <img
+                          src={video?.thumbnail || logo}
+                          alt="Video thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+                        <span className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                          <span className="h-16 w-16 rounded-full bg-brand text-brand-fg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                            <Play size={28} fill="currentColor" className="ml-0.5" />
+                          </span>
+                          <span className="mt-3 text-sm font-medium">
+                            Play property video
+                          </span>
+                        </span>
+                      </button>
+                    ) : (
+                      <Suspense
+                        fallback={
+                          <div className="aspect-video bg-raised animate-pulse rounded-xl" />
+                        }
+                      >
+                      <NeonVideoPlayer
+                        src={`${API}${video?.masterProxyUrl || ""}`}
+                        poster={video?.thumbnail || logo}
+                        autoPlay
+                        className="aspect-video"
+                      />
+                      </Suspense>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isImageModalOpen && hasImages && (
+              <div
+                className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+                onTouchStart={(e) =>
+                  (window.touchStartX = e.changedTouches[0].screenX)
+                }
+                onTouchEnd={(e) => {
+                  const touchEndX = e.changedTouches[0].screenX;
+                  const deltaX = window.touchStartX - touchEndX;
+                  if (deltaX > 50) {
+                    setModalImageIndex(
+                      (modalImageIndex + 1) % property.images.length
+                    );
+                  } else if (deltaX < -50) {
+                    setModalImageIndex(
+                      (modalImageIndex - 1 + property.images.length) %
+                        property.images.length
+                    );
+                  }
+                }}
+              >
+                <button
+                  type="button"
+                  aria-label="Close image"
+                  onClick={closeImageModal}
+                  className="absolute top-4 right-4 text-white text-2xl"
+                >
+                  ✕
+                </button>
+                <LazyLoadImage
+                  src={property.images[modalImageIndex]?.presignUrl || logo}
+                  alt="Expanded"
+                  effect="blur"
+                  className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+                />
+                {property.images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous image"
                       onClick={() =>
                         setModalImageIndex(
                           (modalImageIndex - 1 + property.images.length) %
                             property.images.length
                         )
                       }
-                      className="hidden md:block absolute left-4 text-white text-3xl"
+                      className="hidden md:flex absolute left-4 h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white text-3xl"
                     >
                       ‹
                     </button>
                     <button
-                      aria-label="Right arrow to change the images"
+                      type="button"
+                      aria-label="Next image"
                       onClick={() =>
                         setModalImageIndex(
                           (modalImageIndex + 1) % property.images.length
                         )
                       }
-                      className="hidden md:block absolute right-4 text-white text-3xl"
+                      className="hidden md:flex absolute right-4 h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white text-3xl"
                     >
                       ›
                     </button>
-                  </div>
-                )}
-
-                {/* Image Thumbnails */}
-                {property.images.length > 1 && (
-                  <div
-                    ref={thumbnailsRef} // attach the ref here
-                    className="flex space-x-2 mt-4 overflow-x-auto"
-                  >
-                    {property.images.map((image, index) => (
-                      <button
-                        aria-label="View Image Thumbnail"
-                        name="full window"
-                        key={image._id}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                          index === currentImageIndex
-                            ? "border-blue-500"
-                            : "border-gray-600"
-                        }`}
-                      >
-                        <LazyLoadImage
-                          src={image.presignUrl || logo}
-                          alt={image.key || `Image ${index + 1}`}
-                          effect="blur"
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
+                  </>
                 )}
               </div>
             )}
 
-            {/* Videos Section */}
-            {hasVideo && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Videos</h2>
-                <div className="relative bg-gray-900 rounded-xl shadow-lg overflow-hidden">
-                  {!isVideoPlaying ? (
-                    <div
-                      className="w-full h-full flex items-center justify-center cursor-pointer relative"
-                      onClick={() => setIsVideoPlaying(true)}
-                    >
-                      <img
-                        src={property.videos[0]?.thumbnail || logo}
-                        alt="Video Thumbnail"
-                        className="w-full h-96 object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Play size={65} />
-                      </div>
-                    </div>
-                  ) : (
-                    // <video
-                    //   src={property.videos[0]?.presignUrl || logo}
-                    //   controls
-                    //   autoPlay
-                    //   controlsList="nodownload noplaybackrate"
-                    //   disablePictureInPicture
-                    //   className="w-full h-full object-cover"
-                    // />
-                    <NeonVideoPlayer
-                      src={`${API}${
-                        property.videos[0]?.masterProxyUrl || logo
-                      }`}
-                      poster={property.videos[0]?.thumbnail || logo}
-                      qualityOptions={
-                        property.videos[0]?.qualityProxyUrls || []
-                      }
-                      autoPlay={true}
-                    />
-                  )}
-                </div>
+            {property.description && (
+              <div className="rounded-2xl border border-line bg-surface p-5">
+                <h2 className="text-lg font-semibold text-fg mb-3">
+                  About this property
+                </h2>
+                <p className="text-muted leading-relaxed whitespace-pre-wrap">
+                  {property.description}
+                </p>
               </div>
             )}
-
-            {/* Description */}
-            <div className="overflow-x-hidden">
-              <p className="text-gray-300 leading-relaxed max-w-full sm:max-w-[500px] md:max-w-[700px] lg:max-w-[900px]">
-                {property.description}
-              </p>
-            </div>
           </div>
 
           {/* Right Column - Property Details */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-800 rounded-lg shadow-lg p-4 lg:sticky lg:top-24 lg:w-80 lg:h-fit lg:self-start">
-              {/* Tabs */}
-              <div className="flex mb-6 bg-gray-900/60 rounded-xl p-1 backdrop-blur-sm border border-gray-700">
-                {["overview", "details", "amenities", "location"].map((tab) => (
-                  <button
-                    aria-label={`Switch to ${tab} tab`}
-                    name={tab}
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 p-2 rounded-lg text-sm font-small transition-all duration-200 relative
-                      ${
-                        activeTab === tab
-                          ? "bg-blue-500 text-white shadow-md scale-[1.02]"
-                          : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/70"
+            <div className="bg-surface rounded-2xl shadow-sm p-4 sm:p-5 lg:sticky lg:top-24 lg:h-fit border border-line">
+              <div className="grid grid-cols-4 gap-1 mb-5 bg-raised rounded-xl p-1">
+                {detailTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      type="button"
+                      aria-label={`Switch to ${tab.label}`}
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[11px] font-medium ${
+                        activeTab === tab.id
+                          ? "bg-brand text-brand-fg"
+                          : "text-muted hover:text-fg"
                       }`}
-                  >
-                    <span className="capitalize">{tab}</span>
-                  </button>
-                ))}
+                    >
+                      <Icon size={16} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="min-h-60">
                 {/* Tab Content */}
                 {activeTab === "overview" && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      {property.propertyType && (
-                        <div>
-                          <p className="text-xs text-gray-400">Property Type</p>
-                          <p className="font-medium text-sm">
-                            {property.propertyType}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.totalFloors && (
-                        <div>
-                          <p className="text-xs text-gray-400">Total Floors</p>
-                          <p className="font-medium text-sm">
-                            {property.totalFloors}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.status && (
-                        <div>
-                          <p className="text-xs text-gray-400">Status</p>
-                          <p className="font-medium text-sm">
-                            {property.status}
-                          </p>
-                        </div>
-                      )}
-
-                      {(property.availabilityDate || property.availability) && (
-                        <div>
-                          <p className="text-xs text-gray-400">Availability</p>
-                          <p className="font-medium text-sm">
-                            {property.availabilityDate
-                              ? new Date(
-                                  property.availabilityDate
-                                ).toLocaleDateString("en-GB", {
-                                  day: "2-digit",
-                                  month: "long",
-                                  year: "numeric",
-                                })
-                              : property.availability}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.size && property.sizeUnit && (
-                        <div>
-                          <p className="text-xs text-gray-400">Size</p>
-                          <p className="font-medium text-sm">
-                            {property.size} {property.sizeUnit}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.furnished && (
-                        <div>
-                          <p className="text-xs text-gray-400">
-                            Furnished Status
-                          </p>
-                          <p className="font-medium text-sm">
-                            {property.furnished}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.bedrooms && (
-                        <div>
-                          <p className="text-xs text-gray-400">Bedrooms</p>
-                          <p className="font-medium text-sm">
-                            {property.bedrooms}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.bathrooms && (
-                        <div>
-                          <p className="text-xs text-gray-400">Bathrooms</p>
-                          <p className="font-medium text-sm">
-                            {property.bathrooms}
-                          </p>
-                        </div>
-                      )}
-
-                      {property.balconies > 0 && (
-                        <div>
-                          <p className="text-xs text-gray-400">Balconies</p>
-                          <p className="font-medium text-sm">
-                            {property.balconies}
-                          </p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-xs text-gray-400">Maintenance</p>
-                        <p className="font-medium text-sm">
-                          ₹{property.maintenance}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {property.propertyType && (
+                      <OverviewItem
+                        icon={Building2}
+                        label="Property Type"
+                        value={property.propertyType}
+                      />
+                    )}
+                    {property.totalFloors && (
+                      <OverviewItem
+                        icon={Layers}
+                        label="Total Floors"
+                        value={property.totalFloors}
+                      />
+                    )}
+                    {property.status && (
+                      <OverviewItem
+                        icon={Tag}
+                        label="Status"
+                        value={property.status}
+                      />
+                    )}
+                    {(property.availabilityDate || property.availability) && (
+                      <OverviewItem
+                        icon={CalendarClock}
+                        label="Availability"
+                        value={
+                          property.availabilityDate
+                            ? new Date(
+                                property.availabilityDate
+                              ).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })
+                            : property.availability
+                        }
+                      />
+                    )}
+                    {property.size && property.sizeUnit && (
+                      <OverviewItem
+                        icon={Maximize2}
+                        label="Size"
+                        value={`${property.size} ${property.sizeUnit}`}
+                      />
+                    )}
+                    {property.furnished && (
+                      <OverviewItem
+                        icon={Sofa}
+                        label="Furnished Status"
+                        value={property.furnished}
+                      />
+                    )}
+                    {property.bedrooms && (
+                      <OverviewItem
+                        icon={BedDouble}
+                        label="Bedrooms"
+                        value={property.bedrooms}
+                      />
+                    )}
+                    {property.bathrooms && (
+                      <OverviewItem
+                        icon={Bath}
+                        label="Bathrooms"
+                        value={property.bathrooms}
+                      />
+                    )}
+                    {property.balconies > 0 && (
+                      <OverviewItem
+                        icon={DoorOpen}
+                        label="Balconies"
+                        value={property.balconies}
+                      />
+                    )}
+                    <OverviewItem
+                      icon={IndianRupee}
+                      label="Maintenance"
+                      value={`₹${property.maintenance}`}
+                    />
                   </div>
                 )}
 
@@ -628,12 +696,12 @@ useEffect(() => {
                   <div className="space-y-4">
                     {/* Basic Details */}
                     <div>
-                      <h3 className="font-semibold mb-2 text-white text-sm">
+                      <h3 className="font-semibold mb-2 text-fg text-sm">
                         Basic Details
                       </h3>
                       <div className="space-y-1.5">
                         <div className="flex justify-between">
-                          <span className="text-gray-300 text-xs">
+                          <span className="text-muted text-xs">
                             Parking:
                           </span>
                           <span className="font-medium text-xs">
@@ -641,7 +709,7 @@ useEffect(() => {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-300 text-xs">
+                          <span className="text-muted text-xs">
                             Security Deposit:
                           </span>
                           <span className="font-medium text-xs">
@@ -655,7 +723,7 @@ useEffect(() => {
 
                     {/* Additional Details */}
                     <div>
-                      <h3 className="font-semibold mb-2 text-white text-sm">
+                      <h3 className="font-semibold mb-2 text-fg text-sm">
                         Additional Details
                       </h3>
                       <div className="space-y-1.5">
@@ -671,7 +739,7 @@ useEffect(() => {
                               key={field.name}
                               className="flex justify-between"
                             >
-                              <span className="text-gray-300 text-xs">
+                              <span className="text-muted text-xs">
                                 {field.label}:
                               </span>
                               <span className="font-medium text-xs">
@@ -687,25 +755,22 @@ useEffect(() => {
 
                 {activeTab === "amenities" && (
                   <div>
-                    <h3 className="font-semibold mb-3 text-white text-sm">
+                    <h3 className="font-semibold mb-3 text-fg text-sm">
                       Amenities
                     </h3>
                     {property.amenities && property.amenities.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-1.5">
+                      <div className="flex flex-wrap gap-2">
                         {property.amenities.map((amenity, index) => (
-                          <div
+                          <span
                             key={index}
-                            className="flex items-center space-x-2"
+                            className="px-2.5 py-1 text-xs rounded-full bg-raised text-fg border border-line"
                           >
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-gray-300 text-xs">
-                              {amenity.toUpperCase()}
-                            </span>
-                          </div>
+                            {amenity}
+                          </span>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-400 text-xs">
+                      <p className="text-muted text-xs">
                         No amenities listed
                       </p>
                     )}
@@ -714,19 +779,19 @@ useEffect(() => {
 
                 {activeTab === "location" && (
                   <div>
-                    <h3 className="font-semibold mb-3 text-white text-sm">
+                    <h3 className="font-semibold mb-3 text-fg text-sm">
                       Location Details
                     </h3>
                     <div className="flex flex-row space-x-6 mb-4">
                       <div>
-                        <p className="text-xs text-gray-400">Address</p>
+                        <p className="text-xs text-muted">Address</p>
                         <p className="font-medium text-xs">
                           {property.location}
                         </p>
                       </div>
                       {property?.landmarks && (
                         <div>
-                          <p className="text-xs text-gray-400">Landmark</p>
+                          <p className="text-xs text-muted">Landmark</p>
                           <p className="font-medium text-xs">
                             {property.landmarks}
                           </p>
@@ -736,18 +801,18 @@ useEffect(() => {
                     {/* Agent Information */}
                     {property.agent && (
                       <div>
-                        <h3 className="font-semibold mb-2 text-white text-sm">
+                        <h3 className="font-semibold mb-2 text-fg text-sm">
                           Agent Information
                         </h3>
                         <div className="space-y-1.5">
                           <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">Name:</span>
+                            <span className="text-muted text-xs">Name:</span>
                             <span className="font-medium text-xs">
                               {property.agent.name}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">
+                            <span className="text-muted text-xs">
                               Email:
                             </span>
                             <span className="font-medium text-xs">
@@ -760,20 +825,20 @@ useEffect(() => {
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">
+                            <span className="text-muted text-xs">
                               Phone:
                             </span>
                             <span className="font-medium text-xs">
                               <a
                                 href={`tel:${property.agent.phone}`}
-                                className="hover:underline text-blue-400"
+                                className="hover:underline text-brand"
                               >
                                 {property.agent.phone}
                               </a>
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-300 text-xs">
+                            <span className="text-muted text-xs">
                               Broker Charge:
                             </span>
                             <span className="font-medium text-xs">
@@ -786,6 +851,17 @@ useEffect(() => {
                   </div>
                 )}
               </div>
+
+              <a
+                href={`https://wa.me/919959120077?text=${encodeURIComponent(
+                  `Hi, I'm interested in ${property.title}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 flex items-center justify-center w-full py-2.5 rounded-lg bg-brand text-brand-fg font-medium hover:opacity-90"
+              >
+                Enquire on WhatsApp
+              </a>
             </div>
           </div>
         </div>
@@ -793,5 +869,15 @@ useEffect(() => {
     </div>
   );
 };
+
+const OverviewItem = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2.5 min-w-0">
+    <Icon size={16} className="mt-0.5 shrink-0 text-brand" />
+    <div className="min-w-0">
+      <p className="text-xs text-muted">{label}</p>
+      <p className="font-medium text-sm break-words">{value}</p>
+    </div>
+  </div>
+);
 
 export default PropertyDetailsPage;

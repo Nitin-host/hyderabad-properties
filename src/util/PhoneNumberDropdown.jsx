@@ -222,9 +222,9 @@ class PhoneInputDropdown extends Component {
 
     return (
       <div className={`relative w-full ${className}`}>
-        <div className="flex items-center border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-gray-100 focus-within:ring-2 focus-within:ring-indigo-500">
+        <div className="flex items-center border border-line rounded-lg shadow-sm bg-raised text-fg focus-within:ring-2 focus-within:ring-brand">
           <div
-            className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded-l-lg"
+            className="flex items-center gap-2 px-3 cursor-pointer hover:bg-line rounded-l-lg"
             onClick={this.toggleDropdown}
             role="button"
           >
@@ -239,7 +239,7 @@ class PhoneInputDropdown extends Component {
 
           <input
             type="tel"
-            className="w-full px-3 py-2 bg-gray-700 text-white focus:outline-none rounded-r-lg"
+            className="w-full px-3 py-2 bg-raised text-fg focus:outline-none rounded-r-lg"
             placeholder="Enter phone number"
             value={formatLocalNumber(phone, selectedCountry.code)}
             onChange={this.handlePhoneChange}
@@ -247,12 +247,12 @@ class PhoneInputDropdown extends Component {
         </div>
 
         {showDropdown && (
-          <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-700 bg-gray-900 shadow-lg">
+          <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-line bg-surface shadow-lg">
             {countries.map((c) => (
               <li
                 key={c.code}
                 onClick={() => this.handleCountrySelect(c)}
-                className="flex items-center px-3 py-2 cursor-pointer hover:bg-gray-800"
+                className="flex items-center px-3 py-2 cursor-pointer hover:bg-raised"
               >
                 <img
                   src={c.flag}
@@ -260,7 +260,7 @@ class PhoneInputDropdown extends Component {
                   className="w-5 h-4 mr-2 rounded-sm"
                 />
                 <span className="flex-1 text-sm">{c.name}</span>
-                <span className="text-sm text-gray-400">{c.dial}</span>
+                <span className="text-sm text-muted">{c.dial}</span>
               </li>
             ))}
           </ul>

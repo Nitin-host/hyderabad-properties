@@ -445,21 +445,21 @@ export const propertyFormConfig = {
   styles: {
     container: "space-y-6",
     section: "space-y-4",
-    sectionTitle: "text-lg font-semibold text-white mb-4",
+    sectionTitle: "text-lg font-semibold text-fg mb-4",
     grid: "grid grid-cols-1 md:grid-cols-2 gap-4",
     fieldContainer: "space-y-1",
-    label: "block text-sm font-medium text-gray-300 mb-1",
+    label: "block text-sm font-medium text-muted mb-1",
     input:
-      "w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+      "w-full px-3 py-2.5 sm:py-2 bg-raised border border-line rounded-lg text-fg text-base focus:ring-2 focus:ring-brand focus:border-transparent",
     select:
-      "w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+      "w-full px-3 py-2.5 sm:py-2 bg-raised border border-line rounded-lg text-fg text-base focus:ring-2 focus:ring-brand focus:border-transparent",
     textarea:
-      "w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+      "w-full px-3 py-2.5 sm:py-2 bg-raised border border-line rounded-lg text-fg text-base focus:ring-2 focus:ring-brand focus:border-transparent",
     checkbox:
-      "h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500",
-    checkboxLabel: "ml-2 text-sm text-gray-300",
+      "h-4 w-4 text-brand bg-raised border-line rounded focus:ring-brand",
+    checkboxLabel: "ml-2 text-sm text-muted",
     checkboxContainer: "flex items-center",
-    checkboxGrid: "grid grid-cols-2 md:grid-cols-3 gap-3",
+    checkboxGrid: "grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3",
     error: "text-red-400 text-sm mt-1",
     colSpan2: "md:col-span-2",
   },
@@ -469,15 +469,18 @@ export const propertyFormConfig = {
 export const formHelpers = {
   // Get initial form data
   getInitialFormData: (editingProperty = null) => {
-    if (editingProperty) {
-      return {
-        ...propertyFormConfig.defaultFormData,
-        ...editingProperty,
-        // Ensure amenities array is properly set
-        amenities: editingProperty.amenities || [],
-      };
-    }
-    return { ...propertyFormConfig.defaultFormData };
+    const base = { ...propertyFormConfig.defaultFormData };
+    if (!editingProperty) return base;
+
+    Object.keys(base).forEach((key) => {
+      if (editingProperty[key] !== undefined && editingProperty[key] !== null) {
+        base[key] = editingProperty[key];
+      }
+    });
+    base.amenities = Array.isArray(editingProperty.amenities)
+      ? editingProperty.amenities
+      : [];
+    return base;
   },
 
   // Validate form data

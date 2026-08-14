@@ -8,7 +8,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="relative mt-auto overflow-hidden rounded-t-3xl border-t border-white/20 transition-all duration-700"
+      className="relative z-30 mt-auto w-full border-t border-line bg-surface transition-all duration-700 pb-24 lg:pb-0"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -25,7 +25,7 @@ export default function Footer() {
         </div>
       )}
 
-      <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 px-6 py-12 text-gray-200">
+      <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 px-6 py-12 text-muted">
         {/* Branding */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left">
           <img
@@ -33,19 +33,19 @@ export default function Footer() {
             alt="RR Properties Logo"
             className="h-16 w-auto object-contain mb-4 drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]"
           />
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-muted">
             Helping you find your perfect home in Kondapur, Hyderabad.
           </p>
         </div>
 
         {/* Quick Links */}
         <div>
-          <h4 className="font-semibold text-white mb-4 text-lg">Quick Links</h4>
+          <h4 className="font-semibold text-fg mb-4 text-lg">Quick Links</h4>
           <ul className="space-y-2">
             <li>
               <Link
                 to="/"
-                className="hover:text-white transition-colors duration-200"
+                className="hover:text-fg transition-colors duration-200"
               >
                 Properties
               </Link>
@@ -53,7 +53,7 @@ export default function Footer() {
             <li>
               <Link
                 to="/contact"
-                className="hover:text-white transition-colors duration-200"
+                className="hover:text-fg transition-colors duration-200"
               >
                 Contact
               </Link>
@@ -61,7 +61,7 @@ export default function Footer() {
             <li>
               <Link
                 to="/favorites"
-                className="hover:text-white transition-colors duration-200"
+                className="hover:text-fg transition-colors duration-200"
               >
                 Favorites
               </Link>
@@ -71,15 +71,15 @@ export default function Footer() {
 
         {/* Contact Info */}
         <div>
-          <h4 className="font-semibold text-white mb-4 text-lg">Contact Us</h4>
-          <p className="text-sm text-gray-300 mb-2">
+          <h4 className="font-semibold text-fg mb-4 text-lg">Contact Us</h4>
+          <p className="text-sm text-muted mb-2">
             Kondapur, Hyderabad, India
           </p>
           <p className="text-sm">
             Phone:{" "}
             <a
               href="tel:+919959120077"
-              className="hover:text-white transition-colors"
+              className="hover:text-fg transition-colors"
             >
               +91 9959120077
             </a>
@@ -88,7 +88,7 @@ export default function Footer() {
             Email:{" "}
             <a
               href="mailto:rakesh9959120077@gmail.com"
-              className="hover:text-white transition-colors"
+              className="hover:text-fg transition-colors"
             >
               rakesh9959120077@gmail.com
             </a>
@@ -102,7 +102,7 @@ export default function Footer() {
               href="https://instagram.com/hyderabad_properties_for_rent"
               hoverGradient="linear-gradient(45deg, #405DE6, #833AB4, #C13584)"
             >
-              <Instagram className="w-5 h-5 text-white" />
+              <Instagram className="w-5 h-5 text-fg" />
             </SocialButton>
             {/* <SocialButton
               href="https://facebook.com/profile"
@@ -114,7 +114,7 @@ export default function Footer() {
               href="https://youtube.com/@RakeshB-jx2cm"
               hoverGradient="linear-gradient(45deg, #FF0000, #CC0000)"
             >
-              <Youtube className="w-5 h-5 text-white" />
+              <Youtube className="w-5 h-5 text-fg" />
             </SocialButton>
             <SocialButton
               href="https://wa.me/9959120077?text=Hi%20there!%20I%20have%20a%20query."
@@ -126,13 +126,13 @@ export default function Footer() {
                 height="22"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="text-gray-200"
+                className="text-fg"
               >
                 <path d="M16.6 14c-.2-.1-1.5-.7-1.7-.8c-.2-.1-.4-.1-.6.1c-.2.2-.6.8-.8 1c-.1.2-.3.2-.5.1c-.7-.3-1.4-.7-2-1.2c-.5-.5-1-1.1-1.4-1.7c-.1-.2 0-.4.1-.5c.1-.1.2-.3.4-.4c.1-.1.2-.3.2-.4c.1-.1.1-.3 0-.4c-.1-.1-.6-1.3-.8-1.8c-.1-.7-.3-.7-.5-.7h-.5c-.2 0-.5.2-.6.3c-.6.6-.9 1.3-.9 2.1c.1.9.4 1.8 1 2.6c1.1 1.6 2.5 2.9 4.2 3.7c.5.2.9.4 1.4.5c.5.2 1 .2 1.6.1c.7-.1 1.3-.6 1.7-1.2c.2-.4.2-.8 .1-1.2l-.4-.2m2.5-9.1C15.2 1 8.9 1 5 4.9c-3.2 3.2-3.8 8.1-1.6 12L2 22l5.3-1.4c1.5.8 3.1 1.2 4.7 1.2c5.5 0 9.9-4.4 9.9-9.9c.1-2.6-1-5.1-2.8-7m-2.7 14c-1.3.8-2.8 1.3-4.4 1.3c-1.5 0-2.9-.4-4.2-1.1l-.3-.2l-3.1.8l.8-3l-.2-.3c-2.4-4-1.2-9 2.7-11.5S16.6 3.7 19 7.5c2.4 3.9 1.3 9-2.6 11.4" />
               </svg>
             </SocialButton>
           </div>
-          <p className="text-xs text-gray-300 mt-6">
+          <p className="text-xs text-muted mt-6">
             &copy; {new Date().getFullYear()} RR Properties. All rights
             reserved.
           </p>

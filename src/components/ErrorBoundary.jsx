@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component {
           <h2 className="text-2xl font-bold text-red-500">
             Something went wrong
           </h2>
-          <p className="mt-2 text-gray-400">Please try again.</p>
+          <p className="mt-2 text-muted">Please try again.</p>
           <button
             aria-label="Retry"
             onClick={this.handleRetry}
@@ -36,7 +36,7 @@ class ErrorBoundary extends React.Component {
           </button>
 
           {import.meta.env.MODE === "development" && (
-            <pre className="mt-4 p-4 text-left text-sm bg-gray-800 text-red-400 rounded-lg overflow-x-auto">
+            <pre className="mt-4 p-4 text-left text-sm bg-raised text-red-400 rounded-lg overflow-x-auto">
               {this.state.error && this.state.error.toString()}
               <br />
               {this.state.errorInfo?.componentStack}

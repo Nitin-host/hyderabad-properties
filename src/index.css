@@ -1,13 +1,51 @@
 @import "tailwindcss";
 
-/* Dark theme only configuration */
-html {
-  color-scheme: dark;
-  background-color: #111827;
-  color: white;
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
 }
 
-/* Ensure full height */
+:root,
+html.dark {
+  color-scheme: dark;
+  --page: #111318;
+  --surface: #1a1e27;
+  --raised: #242a35;
+  --line: #323846;
+  --fg: #f3efe8;
+  --muted: #b4ada3;
+  --brand: #e8a667;
+  --brand-fg: #1a140c;
+  --scroll-track: var(--page);
+  --scroll-thumb: #3a4252;
+  --scroll-thumb-hover: var(--brand);
+  background-color: var(--page);
+  color: var(--fg);
+}
+
+html.light {
+  color-scheme: light;
+  --page: #f4f0ea;
+  --surface: #ffffff;
+  --raised: #efe8dc;
+  --line: #e2d8c8;
+  --fg: #1c1915;
+  --muted: #6b645b;
+  --brand: #b67a32;
+  --brand-fg: #ffffff;
+  --scroll-track: var(--page);
+  --scroll-thumb: #c9bdaa;
+  --scroll-thumb-hover: var(--brand);
+}
+
 .no-transition,
 .no-transition * {
   transition: none !important;
@@ -25,36 +63,28 @@ html {
   animation: fadeInOut 2s ease-in-out forwards;
 }
 
-button{
+button {
   @apply cursor-pointer;
 }
 
-/* Smooth transitions for all clickable elements */
 button, a {
   @apply transition-colors duration-200;
 }
 
-/* Prevent text selection on icons (like share/heart) */
 svg {
   user-select: none;
   pointer-events: none;
 }
 
 @keyframes shimmer {
-  0% {
-        transform: translateX(-100%);
-      }
-  100% {
-    transform: translateX(200%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
 .animate-shimmer {
   animation: shimmer 8s linear infinite;
 }
 
-
-/* Remove arrows in Chrome, Safari, Edge, Opera */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -62,11 +92,66 @@ input[type="number"]::-webkit-inner-spin-button {
   pointer-events: none;
 }
 
-/* Remove arrows in Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+html::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+
+html::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 999px;
+  border: 3px solid var(--scroll-track);
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scroll-thumb-hover);
+}
+
+html::-webkit-scrollbar-corner {
+  background: var(--scroll-track);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scroll-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
@@ -75,21 +160,3 @@ input[type="number"] {
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
-
-
-
-/* .fullscreen-active {
-  width: 100vw !important;
-  height: 100vh !important;
-  position: fixed !important;
-  left: 0; top: 0;
-  z-index: 9999;
-  background: black;
-}
-
-.fullscreen-active video {
-  width: 100vw !important;
-  height: 100vh !important;
-  object-fit: contain !important;
-} */
-

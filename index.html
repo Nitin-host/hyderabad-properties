@@ -1,15 +1,33 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("theme");
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+          }
+          document.documentElement.classList.add(t);
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <!-- Favicon -->
      <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="RR Properties Hyderabad" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RR Properties" />
 
     <!-- Primary SEO -->
     <title>RR Properties Hyderabad | Buy, Sell & Rent Homes in Kondapur & Sri Ram Nagar</title>
@@ -22,7 +40,7 @@
       content="Hyderabad real estate, properties in Hyderabad, Kondapur real estate, Sri Ram Nagar properties, flats for sale Hyderabad, houses for sale Hyderabad, real estate agents Hyderabad, 1BHK 2BHK 3BHK flats Hyderabad, gated community flats Kondapur, commercial properties Hyderabad"
     />
     <meta name="author" content="RR Properties" />
-    <!-- <meta name="theme-color" content="#0b5cff" /> -->
+    <meta name="theme-color" content="#111318" />
 
     <!-- Canonical & Sitemap -->
     <link rel="canonical" href="https://rrpropertieshyderabad.com/" />

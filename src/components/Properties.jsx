@@ -14,9 +14,23 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Search,
+  X,
 } from "lucide-react";
 import StickyWhatsApp from "./StickyWhatsApp.jsx";
-import { useLocation, useNavigate } from "react-router-dom";
+
+const PROPERTY_TYPE_OPTIONS = [
+  "Standalone",
+  "Gated Community",
+  "Apartment",
+  "Villa",
+  "Independent House",
+  "Plot",
+  "Commercial",
+  "Office Space",
+  "Other",
+];
+const BEDROOM_OPTIONS = ["1BHK", "2BHK", "3BHK", "4BHK"];
 
 /* ---------- FilterPopover (unchanged) ---------- */
 const FilterPopover = ({
@@ -36,22 +50,22 @@ const FilterPopover = ({
         onClick={() => setIsOpen((s) => !s)}
         className={`p-3 rounded-lg flex items-center justify-center ${
           hasActiveFilters
-            ? "bg-blue-600 text-white"
-            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            ? "bg-brand text-brand-fg"
+            : "bg-raised text-muted hover:bg-line"
         } transition-colors`}
       >
         <Filter size={20} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 bg-gray-800 rounded-lg shadow-lg z-10 p-4">
+        <div className="absolute right-0 mt-2 w-72 bg-surface border border-line rounded-lg shadow-lg z-10 p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-white font-medium">Filters</h3>
+            <h3 className="text-fg font-medium">Filters</h3>
             <button
               name="close"
               aria-label="Close"
               onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-white"
+              className="text-muted hover:text-fg"
             >
               ✕
             </button>
@@ -59,16 +73,17 @@ const FilterPopover = ({
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-muted mb-1">
                 Property Type
               </label>
               <select
                 aria-label="Select Property Type"
                 value={filters.propertyType}
-                onChange={(e) =>
-                  handleFilterChange("propertyType", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm"
+                onChange={(e) => {
+                  handleFilterChange("propertyType", e.target.value);
+                  setIsOpen(false);
+                }}
+                className="w-full px-3 py-2 border border-line rounded-lg bg-raised text-fg text-sm"
               >
                 <option value="">All Property Types</option>
                 {filterOptions.propertyTypes.map((type) => (
@@ -80,14 +95,17 @@ const FilterPopover = ({
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-muted mb-1">
                 Bedrooms
               </label>
               <select
                 aria-label="Select Number of Bedrooms"
                 value={filters.bedrooms}
-                onChange={(e) => handleFilterChange("bedrooms", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm"
+                onChange={(e) => {
+                  handleFilterChange("bedrooms", e.target.value);
+                  setIsOpen(false);
+                }}
+                className="w-full px-3 py-2 border border-line rounded-lg bg-raised text-fg text-sm"
               >
                 <option value="">All Bedrooms</option>
                 {filterOptions.bedrooms.map((bed) => (
@@ -102,7 +120,7 @@ const FilterPopover = ({
               name="clear filters"
               aria-label="Clear All Filters"
               onClick={clearFilters}
-              className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded-lg hover:bg-gray-500 transition-colors text-sm"
+              className="w-full px-4 py-2 bg-raised text-muted rounded-lg hover:bg-line transition-colors text-sm"
             >
               Clear All Filters
             </button>
@@ -115,32 +133,32 @@ const FilterPopover = ({
 
 /* ---------- SkeletonPropertyCard (same) ---------- */
 const SkeletonPropertyCard = () => (
-  <div className="rounded-xl bg-gray-800 overflow-hidden shadow-lg flex flex-col h-full animate-pulse">
+  <div className="rounded-xl bg-surface border border-line overflow-hidden shadow-sm flex flex-col h-full animate-pulse">
     <div className="relative">
-      <div className="h-40 bg-gray-700 w-full" />
+      <div className="h-48 bg-raised w-full shrink-0" />
     </div>
 
     <div className="p-4 flex flex-col flex-1 space-y-3">
-      <div className="h-6 bg-gray-700 rounded w-24" />
-      <div className="h-5 bg-gray-700 rounded w-3/5" />
-      <div className="h-4 bg-gray-700 rounded w-2/3" />
+      <div className="h-6 bg-raised rounded w-24" />
+      <div className="h-5 bg-raised rounded w-3/5" />
+      <div className="h-4 bg-raised rounded w-2/3" />
       <div className="flex items-center space-x-2 mt-2">
-        <div className="h-4 w-4 bg-gray-700 rounded" />
-        <div className="h-4 bg-gray-700 rounded w-1/2" />
+        <div className="h-4 w-4 bg-raised rounded" />
+        <div className="h-4 bg-raised rounded w-1/2" />
       </div>
       <div className="flex items-center space-x-3 mt-3">
-        <div className="h-4 w-14 bg-gray-700 rounded" />
-        <div className="h-4 w-16 bg-gray-700 rounded" />
-        <div className="h-4 w-16 bg-gray-700 rounded" />
+        <div className="h-4 w-14 bg-raised rounded" />
+        <div className="h-4 w-16 bg-raised rounded" />
+        <div className="h-4 w-16 bg-raised rounded" />
       </div>
       <div className="flex gap-2 mt-2">
-        <div className="h-6 w-20 bg-gray-700 rounded-lg" />
-        <div className="h-6 w-14 bg-gray-700 rounded-lg" />
-        <div className="h-6 w-10 bg-gray-700 rounded-lg" />
-        <div className="h-6 w-12 bg-gray-700 rounded-lg" />
+        <div className="h-6 w-20 bg-raised rounded-lg" />
+        <div className="h-6 w-14 bg-raised rounded-lg" />
+        <div className="h-6 w-10 bg-raised rounded-lg" />
+        <div className="h-6 w-12 bg-raised rounded-lg" />
       </div>
       <div className="mt-4">
-        <div className="h-10 bg-gray-700 rounded-lg w-full" />
+        <div className="h-10 bg-raised rounded-lg w-full" />
       </div>
     </div>
   </div>
@@ -156,11 +174,15 @@ const Properties = () => {
 
   // Filters and options
   const [filters, setFilters] = useState({ propertyType: "", bedrooms: "" });
-  const [filterOptions, setFilterOptions] = useState({
-    propertyTypes: [],
-    bedrooms: [],
-  });
+  const filterOptions = useMemo(
+    () => ({
+      propertyTypes: PROPERTY_TYPE_OPTIONS,
+      bedrooms: BEDROOM_OPTIONS,
+    }),
+    []
+  );
 
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   // Pagination / infinite state
@@ -179,6 +201,7 @@ const Properties = () => {
   // sentinel for infinite scroll
   const sentinelRef = useRef(null);
   const abortRef = useRef(null);
+  const requestIdRef = useRef(0);
   const loadingLockRef = useRef(false);
 
   // Determine mode textually (memo)
@@ -186,6 +209,14 @@ const Properties = () => {
     () => (isMobileOrTablet ? "infinite" : "pagination"),
     [isMobileOrTablet]
   );
+
+  // Debounce search so typing does not hit the API on every keystroke
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setSearchTerm(searchInput.trim());
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [searchInput]);
 
   // Scroll to top when switching to pagination or when page changes (nice UX)
   useEffect(() => {
@@ -223,14 +254,17 @@ const Properties = () => {
   // Core fetcher: either replace (replace=true) or append (replace=false)
   const fetchPage = useCallback(
     async (pg = 1, replace = true) => {
-      // avoid concurrent loads
-      if (loadingLockRef.current) return;
+      if (!replace && loadingLockRef.current) return;
+
+      const requestId = ++requestIdRef.current;
       loadingLockRef.current = true;
 
       if (abortRef.current) {
         try {
           abortRef.current.abort();
-        } catch (e) {}
+        } catch {
+          // ignore abort errors
+        }
         abortRef.current = null;
       }
 
@@ -246,6 +280,8 @@ const Properties = () => {
         const res = await propertiesAPI.getAll(params, {
           signal: controller.signal,
         });
+        if (requestId !== requestIdRef.current) return;
+
         const { data = [], pagination = {} } = res || {};
         const pages = pagination?.pages ?? 1;
 
@@ -254,7 +290,6 @@ const Properties = () => {
         if (replace) {
           setProperties(data);
         } else {
-          // append while ensuring dedupe by id if needed
           setProperties((prev) => {
             const existingIds = new Set(prev.map((p) => p._id || p.id));
             const appended = data.filter(
@@ -264,32 +299,30 @@ const Properties = () => {
           });
         }
 
-        // update page trackers
         if (mode === "infinite") {
           pageRef.current = pg;
           setHasMore(pg < pages);
         } else {
           setPage(pg);
         }
-
-        // derive filter options from first page (replace)
-        if (pg === 1) {
-          const types = [...new Set((data || []).map((p) => p.propertyType))];
-          const beds = [...new Set((data || []).map((p) => p.bedrooms))];
-          setFilterOptions({ propertyTypes: types, bedrooms: beds });
-        }
       } catch (err) {
-        if (err.name === "AbortError") {
-          // ignore
-        } else {
-          console.error("Failed to fetch properties:", err);
-          setError(err.message || "Failed to load properties");
+        if (
+          err.name === "AbortError" ||
+          err.name === "CanceledError" ||
+          err.code === "ERR_CANCELED"
+        ) {
+          return;
         }
+        if (requestId !== requestIdRef.current) return;
+        console.error("Failed to fetch properties:", err);
+        setError(err.message || "Failed to load properties");
       } finally {
-        setLoadingInitial(false);
-        setLoadingMore(false);
-        loadingLockRef.current = false;
-        abortRef.current = null;
+        if (requestId === requestIdRef.current) {
+          setLoadingInitial(false);
+          setLoadingMore(false);
+          loadingLockRef.current = false;
+          abortRef.current = null;
+        }
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -298,21 +331,19 @@ const Properties = () => {
 
   // Initial load & reset when filters/search/limit change or mode changes:
   useEffect(() => {
-    // reset trackers
     pageRef.current = 1;
     setPage(1);
     setProperties([]);
     setHasMore(true);
     setTotalPages(1);
-    // fetch page 1, replace
     fetchPage(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.propertyType, filters.bedrooms, searchTerm, limit, mode]);
 
-  // Pagination: when user clicks page (desktop mode)
+  // Pagination: skip page 1 because the reset effect already fetched it
   useEffect(() => {
     if (mode !== "pagination") return;
-    // fetch page (replace)
+    if (page === 1) return;
     fetchPage(page, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, mode]);
@@ -372,6 +403,7 @@ const Properties = () => {
 
   const clearFilters = () => {
     setFilters({ propertyType: "", bedrooms: "" });
+    setSearchInput("");
     setSearchTerm("");
     pageRef.current = 1;
     setProperties([]);
@@ -400,32 +432,48 @@ const Properties = () => {
     return pages;
   };
 
-  if (error) throw Error(error);
-
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
+    <div className="min-h-screen bg-page p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header + Search + Filter */}
         <div className="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-2xl font-bold text-fg">
               Properties in Kondapur-HYD
             </h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-muted mt-1">
               Discover your dream property from our extensive collection
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Search by title or bedrooms..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-              }}
-              className="px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-72">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              />
+              <input
+                type="search"
+                placeholder="Search by title, location or BHK..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-9 py-2 rounded-lg bg-raised text-fg border border-line focus:ring-2 focus:ring-brand"
+                aria-label="Search properties"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchTerm("");
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-fg p-1"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
             <FilterPopover
               filters={filters}
               filterOptions={filterOptions}
@@ -436,24 +484,52 @@ const Properties = () => {
         </div>
 
         {/* Grid + content */}
-        {loadingInitial ? (
+        {error ? (
+          <div className="text-center text-muted py-16">
+            <Home size={48} className="mx-auto mb-4 text-muted" />
+            <p className="text-lg font-medium text-fg mb-2">
+              Couldn’t load properties
+            </p>
+            <p className="text-muted mb-6">{error}</p>
+            <button
+              type="button"
+              onClick={() => fetchPage(mode === "pagination" ? page : 1, true)}
+              className="px-4 py-2 bg-brand hover:opacity-90 text-brand-fg rounded-lg"
+            >
+              Try again
+            </button>
+          </div>
+        ) : loadingInitial ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: limit }).map((_, idx) => (
               <SkeletonPropertyCard key={idx} />
             ))}
           </div>
         ) : properties.length === 0 ? (
-          <div className="text-center text-gray-400 py-12">
+          <div className="text-center text-muted py-16">
             <Home size={48} className="mx-auto mb-4" />
-            No properties found
+            <p className="text-lg font-medium text-fg mb-2">
+              No properties found
+            </p>
+            <p className="mb-6">
+              Try a different search or clear the filters to see all listings.
+            </p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="px-4 py-2 bg-raised hover:bg-line text-fg rounded-lg"
+            >
+              Clear search & filters
+            </button>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {properties.map((property) => (
+              {properties.map((property, idx) => (
                 <PropertyCard
                   key={property._id || property.id}
                   property={property}
+                  priority={idx < 4}
                 />
               ))}
 
@@ -470,7 +546,7 @@ const Properties = () => {
               <>
                 <div ref={sentinelRef} className="h-6" />
                 {!hasMore && (
-                  <div className="text-center text-gray-500 mt-6">
+                  <div className="text-center text-muted mt-6">
                     You’ve reached the end.
                   </div>
                 )}
@@ -478,7 +554,7 @@ const Properties = () => {
             ) : (
               // pagination UI for desktop
               <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
-                <div className="flex items-center gap-2 text-gray-300">
+                <div className="flex items-center gap-2 text-muted">
                   <span>Rows per page:</span>
                   <select
                     aria-label="Select Rows Per Page"
@@ -487,7 +563,7 @@ const Properties = () => {
                       setLimit(Number(e.target.value));
                       setPage(1);
                     }}
-                    className="bg-gray-700 text-white px-3 py-1 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="bg-raised text-fg px-3 py-1 rounded-lg focus:ring-2 focus:ring-brand"
                   >
                     {[8, 15, 25, 50, 100].map((num) => (
                       <option key={num} value={num}>
@@ -498,13 +574,13 @@ const Properties = () => {
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="flex items-center gap-1 text-gray-300 flex-wrap">
+                  <div className="flex items-center gap-1 text-muted flex-wrap">
                     <button
                       name="left-chevrons"
                       aria-label="go to first page"
                       disabled={page === 1}
                       onClick={() => setPage(1)}
-                      className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                      className="p-2 bg-raised rounded hover:bg-line disabled:opacity-50 transition-colors"
                     >
                       <ChevronsLeft size={16} />
                     </button>
@@ -513,7 +589,7 @@ const Properties = () => {
                       aria-label="previous page"
                       disabled={page === 1}
                       onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                      className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                      className="p-2 bg-raised rounded hover:bg-line disabled:opacity-50 transition-colors"
                     >
                       <ChevronLeft size={16} />
                     </button>
@@ -521,7 +597,7 @@ const Properties = () => {
                     {getPageNumbers(page, totalPages).map((pageNum, idx) =>
                       pageNum === "start-ellipsis" ||
                       pageNum === "end-ellipsis" ? (
-                        <span key={idx} className="px-2 py-1 text-gray-400">
+                        <span key={idx} className="px-2 py-1 text-muted">
                           ...
                         </span>
                       ) : (
@@ -532,8 +608,8 @@ const Properties = () => {
                           onClick={() => setPage(pageNum)}
                           className={`px-3 py-1 rounded-lg transition-colors ${
                             pageNum === page
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                              ? "bg-brand text-brand-fg"
+                              : "bg-raised text-muted hover:bg-line"
                           }`}
                         >
                           {pageNum}
@@ -548,7 +624,7 @@ const Properties = () => {
                       onClick={() =>
                         setPage((prev) => Math.min(prev + 1, totalPages))
                       }
-                      className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                      className="p-2 bg-raised rounded hover:bg-line disabled:opacity-50 transition-colors"
                     >
                       <ChevronRight size={16} />
                     </button>
@@ -557,7 +633,7 @@ const Properties = () => {
                       aria-label="go to last page"
                       disabled={page === totalPages}
                       onClick={() => setPage(totalPages)}
-                      className="p-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                      className="p-2 bg-raised rounded hover:bg-line disabled:opacity-50 transition-colors"
                     >
                       <ChevronsRight size={16} />
                     </button>

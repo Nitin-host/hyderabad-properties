@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from "react";
 import TableUtil from "../util/TableUtil";
 import { useAuth } from "../context/AuthContext";
-import { Trash2, User } from "lucide-react";
+import { Mail, Trash2, User, X } from "lucide-react";
 import { usersAPI } from "../services/api";
 import PhoneInputDropdown from "../util/PhoneNumberDropdown";
 import { notifyError, notifySuccess } from "../util/Notifications";
+
+const fieldClass =
+  "w-full px-4 py-3 border border-line rounded-xl bg-page text-fg placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition";
+
+const overlayClass =
+  "fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm overflow-hidden overscroll-none";
+
+const cardClass =
+  "w-full max-w-md bg-surface text-fg rounded-2xl shadow-2xl border border-line max-h-[90vh] overflow-y-auto";
 
 const UserManagement = () => {
   const { isSuperAdmin } = useAuth();
@@ -30,6 +39,21 @@ const UserManagement = () => {
   useEffect(() => {
     fetchUsers();
   }, [page, limit, searchText, sortConfig]);
+
+  useEffect(() => {
+    const open = showAddUserModal || Boolean(selectedUser);
+    if (!open) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, [showAddUserModal, selectedUser]);
 
   // fetchUsers function updated with isInitial parameter as above
   const fetchUsers = async (isInitial = false) => {
@@ -103,7 +127,7 @@ const UserManagement = () => {
 
   if (!isSuperAdmin()) {
     return (
-      <div className="p-4 bg-yellow-100 text-yellow-800 rounded-md">
+      <div className="p-4 rounded-xl border border-line bg-raised text-fg">
         You don't have permission to access this page.
       </div>
     );
@@ -120,7 +144,7 @@ const UserManagement = () => {
     <div className="space-y-6">
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand"></div>
         </div>
       ) : (
         <TableUtil
@@ -141,7 +165,7 @@ const UserManagement = () => {
               title: "Create new user",
               onClick: () => setShowAddUserModal(true),
               icon: User,
-              btnClass: "bg-blue-600 hover:bg-blue-700",
+              btnClass: "bg-brand hover:opacity-90 text-brand-fg px-3 py-2 rounded-lg",
             },
           ]}
           tableHeader={[
@@ -164,7 +188,7 @@ const UserManagement = () => {
                 <select
                   value={user.role}
                   onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                  className="px-2 py-1 rounded-md bg-gray-700 text-white border border-gray-500 focus:outline-none"
+                  className="px-2 py-1 rounded-md bg-raised text-fg border border-line focus:outline-none"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -175,104 +199,143 @@ const UserManagement = () => {
         />
       )}
       {error && (
-        <div className="p-4 bg-red-100 text-red-800 rounded-md">{error}</div>
+        <div className="rounded-xl border border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 p-3">
+          {error}
+        </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md text-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Confirm Delete</h3>
+        <div className={overlayClass}>
+          <div className={cardClass}>
+            <div className="px-6 pt-6 pb-2 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-bold">Delete admin</h3>
+                <p className="text-sm text-muted mt-1">
+                  This cannot be undone.
+                </p>
+              </div>
               <button
-                aria-label="Close Delete Confirmation Modal"
+                type="button"
+                aria-label="Close"
                 onClick={() => setSelectedUser(null)}
-                className="text-gray-400 hover:text-gray-200"
+                className="p-2 hover:bg-raised rounded-lg transition shrink-0"
               >
-                X
+                <X size={18} className="text-muted" />
               </button>
             </div>
-            <p className="mb-6">
-              Are you sure you want to delete{" "}
-              <strong>{selectedUser.name}</strong>?
+            <p className="px-6 py-4 text-sm">
+              Delete <span className="font-semibold">{selectedUser.name}</span>?
             </p>
-            <div className="flex justify-end gap-2">
+            <div className="px-6 pb-6 flex justify-end gap-2">
               <button
+                type="button"
                 aria-label="Cancel Delete User"
                 onClick={() => setSelectedUser(null)}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
+                className="px-4 py-2.5 rounded-xl bg-raised hover:bg-line text-fg"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 aria-label="Confirm Delete User"
                 onClick={handleDeleteUser}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white inline-flex items-center gap-2"
               >
-                <Trash2 size={18} /> Delete
+                <Trash2 size={16} /> Delete
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add User Modal */}
       {showAddUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md text-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Add Admin User</h3>
+        <div className={overlayClass}>
+          <div className={cardClass}>
+            <div className="px-6 pt-6 pb-2 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand mb-1">
+                  Super Admin
+                </p>
+                <h3 className="text-xl font-bold">Add admin user</h3>
+                <p className="text-sm text-muted mt-1">
+                  They will receive login details by email.
+                </p>
+              </div>
               <button
-                aria-label="Close Add User Modal"
+                type="button"
+                aria-label="Close"
                 onClick={() => setShowAddUserModal(false)}
-                className="text-gray-400 hover:text-gray-200"
+                className="p-2 hover:bg-raised rounded-lg transition shrink-0"
               >
-                X
+                <X size={18} className="text-muted" />
               </button>
             </div>
-            <div className="flex flex-col gap-3">
-              <input
-                type="text"
-                placeholder="Name"
-                value={newUser.name}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, name: e.target.value })
-                }
-                className="px-3 py-2 rounded-md bg-gray-700 border border-gray-500 text-white"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={newUser.email}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, email: e.target.value })
-                }
-                className="px-3 py-2 rounded-md bg-gray-700 border border-gray-500 text-white"
-              />
 
-              <PhoneInputDropdown
-                allowedCountries={["IN"]}
-                onChange={(data) =>
-                  setNewUser((prev) => ({ ...prev, phone: data.phone }))
-                }
-              />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                aria-label="Cancel Add User"
-                onClick={() => setShowAddUserModal(false)}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                aria-label="Create New User"
-                onClick={handleCreateUser}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-                disabled={creating}
-              >
-                {creating ? "Creating..." : "Create"}
-              </button>
+            <div className="px-6 pb-6 pt-4 flex flex-col gap-4">
+              <div>
+                <label className="block mb-2 text-sm font-medium">Name</label>
+                <div className="relative">
+                  <User
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Full name"
+                    value={newUser.name}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, name: e.target.value })
+                    }
+                    className={`${fieldClass} pl-10`}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium">Email</label>
+                <div className="relative">
+                  <Mail
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                    size={18}
+                  />
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={newUser.email}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, email: e.target.value })
+                    }
+                    className={`${fieldClass} pl-10`}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium">Phone</label>
+                <PhoneInputDropdown
+                  allowedCountries={["IN"]}
+                  onChange={(data) =>
+                    setNewUser((prev) => ({ ...prev, phone: data.phone }))
+                  }
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  aria-label="Cancel Add User"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-raised hover:bg-line text-fg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  aria-label="Create New User"
+                  onClick={handleCreateUser}
+                  className="px-4 py-2.5 rounded-xl bg-brand hover:opacity-90 text-brand-fg disabled:opacity-60"
+                  disabled={creating}
+                >
+                  {creating ? "Creating…" : "Create"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

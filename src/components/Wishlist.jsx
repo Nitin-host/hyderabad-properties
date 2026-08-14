@@ -1,82 +1,88 @@
 import React, { useEffect, useState } from "react";
-import { authAPI, propertiesAPI } from "../services/api";
+import { propertiesAPI } from "../services/api";
 import PropertyCard from "./PropertyCard";
-import { Heart } from "lucide-react"; // ✅ nice icon
+import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function Wishlist() {
+  const { user } = useAuth();
+  const { favorites, isLoading: favoritesLoading } = useWishlist();
   const [wishlist, setWishlist] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // ✅ Fetch property details for guest user by IDs
-  const fetchGuestWishlist = async () => {
-    const stored = JSON.parse(localStorage.getItem("favorites")) || [];
-    const ids = stored.map((item) => item._id);
-
-    if (ids.length === 0) {
-      setWishlist([]);
-      return;
-    }
-
-    try {
-      const response = await propertiesAPI.getAll();
-      const filtered = response.data.filter((prop) => ids.includes(prop._id));
-      setWishlist(filtered);
-    } catch (error) {
-      console.error("Error fetching guest wishlist properties:", error);
-    }
-  };
-
-  // ✅ Fetch logged-in user's wishlist
-  const fetchWishlist = async () => {
-    try {
-      if (isLoggedIn) {
-        const response = await authAPI.getFavorites();
-        setWishlist(response || []);
-      } else {
-        await fetchGuestWishlist();
-      }
-    } catch (error) {
-      console.error("Error fetching wishlist:", error);
-    }
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
+    const load = async () => {
+      if (favoritesLoading) return;
+      setLoading(true);
+      try {
+        const hasFullProperties =
+          Array.isArray(favorites) &&
+          favorites.some((item) => item?.title || item?.images);
 
-    fetchWishlist();
-  }, [isLoggedIn]);
+        if (user && hasFullProperties) {
+          setWishlist(favorites.filter((item) => item && item._id));
+          return;
+        }
 
-  // ✅ Remove property
+        const ids = (favorites || [])
+          .map((item) => String(item?._id || item))
+          .filter((id) => /^[a-fA-F0-9]{24}$/.test(id));
+
+        if (ids.length === 0) {
+          setWishlist([]);
+          return;
+        }
+
+        const response = await propertiesAPI.getAll({
+          ids: ids.join(","),
+          limit: Math.max(ids.length, 1),
+        });
+        const list = response?.data || [];
+        const order = new Map(ids.map((id, index) => [id, index]));
+        setWishlist(
+          [...list].sort(
+            (a, b) =>
+              (order.get(String(a._id)) ?? 0) - (order.get(String(b._id)) ?? 0)
+          )
+        );
+      } catch (error) {
+        console.error("Error fetching wishlist:", error);
+        setWishlist([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [user, favorites, favoritesLoading]);
+
   const handleToggleFavorite = (propertyId) => {
-    if (isLoggedIn) {
-      setWishlist((prev) => prev.filter((item) => item._id !== propertyId));
-    } else {
-      const stored = JSON.parse(localStorage.getItem("favorites")) || [];
-      const updated = stored.filter((item) => item._id !== propertyId);
-      localStorage.setItem("favorites", JSON.stringify(updated));
-      setWishlist((prev) => prev.filter((item) => item._id !== propertyId));
-    }
+    setWishlist((prev) =>
+      prev.filter((item) => String(item._id) !== String(propertyId))
+    );
   };
 
   return (
     <div className="p-6 min-h-screen">
       <h2 className="text-2xl font-bold mb-6">My Wishlist</h2>
 
-      {wishlist.length === 0 ? (
+      {loading || favoritesLoading ? (
+        <p className="text-muted mt-10">Loading your saved properties...</p>
+      ) : wishlist.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center mt-20">
-          <Heart className="w-16 h-16 text-gray-400 mb-4" />
-          <h3 className="text-xl font-semibold mb-2 text-gray-200">
+          <Heart className="w-16 h-16 text-muted mb-4" />
+          <h3 className="text-xl font-semibold mb-2 text-fg">
             Your wishlist is empty
           </h3>
-          <p className="text-gray-400 mb-6 max-w-sm">
+          <p className="text-muted mb-6 max-w-sm">
             Save your favorite properties here. Start exploring and add some to
             your wishlist!
           </p>
           <Link
             to="/"
-            className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition"
+            className="bg-brand text-brand-fg px-6 py-2 rounded-md hover:opacity-90 transition"
           >
             Browse Properties
           </Link>

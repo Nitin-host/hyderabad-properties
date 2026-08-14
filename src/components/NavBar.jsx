@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Menu,
   User,
   LogOut,
   ChevronRight,
   Home,
   LayoutDashboard,
-  X,
+  Sun,
+  Moon,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 const NavBar = ({
   isDesktopCollapsed,
@@ -21,7 +24,15 @@ const NavBar = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout, isAuthenticated, hasAdminAccess, isSuperAdmin } =
     useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    setShowUserMenu(false);
+    navigate("/", { replace: true });
+  };
 
   // Separate refs for mobile and desktop menus
   const mobileMenuRef = useRef(null);
@@ -61,22 +72,8 @@ const NavBar = ({
   return (
     <>
       {/* Mobile navbar */}
-      <nav className="bg-gray-800 shadow-md p-4 lg:hidden sticky top-0 z-50">
+      <nav className="bg-surface border-b border-line shadow-sm p-4 lg:hidden sticky top-0 z-50">
         <div className="flex items-center justify-between">
-          {/* Mobile menu button */}
-          <button
-            name="SideBar"
-            aria-label="Side Bar"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-700"
-          >
-            {isSidebarOpen ? (
-              <X size={24} className="text-gray-300" />
-            ) : (
-              <Menu size={24} className="text-gray-300" />
-            )}
-          </button>
-
           <Link
             to="/"
             aria-label="RR Properties Hyderabad home"
@@ -87,35 +84,41 @@ const NavBar = ({
               alt=""
               className="h-10 w-auto object-contain"
             />
-            <span className="font-bold text-xl text-[#E8A667]">
+            <span className="font-bold text-xl text-brand">
               RR Properties
             </span>
           </Link>
 
-          <div className="flex items-center space-x-2" ref={mobileMenuRef}>
+          <div className="flex items-center space-x-1" ref={mobileMenuRef}>
+            <button
+              type="button"
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-raised text-muted"
+            >
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
             {isAuthenticated ? (
               <div className="relative">
                 <button
                   aria-label="User icon"
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
+                  className="p-2 rounded-lg hover:bg-raised flex items-center space-x-2"
                 >
-                  <User size={20} className="text-gray-300" />
-                  <span className="text-sm text-gray-300">{user.name}</span>
+                  <User size={20} className="text-muted" />
+                  <span className="text-sm text-fg">{user.name}</span>
                 </button>
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
-                    <div className="px-4 py-2 border-b border-gray-700">
-                      <p className="text-sm text-gray-300">{user.name}</p>
-                      <p className="text-xs text-gray-400">{user.email}</p>
+                  <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-lg border border-line z-50">
+                    <div className="px-4 py-2 border-b border-line">
+                      <p className="text-sm text-fg">{user.name}</p>
+                      <p className="text-xs text-muted">{user.email}</p>
                       {hasAdminAccess() && user.role && (
                         <span
                           className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
                             isSuperAdmin()
                               ? "bg-purple-600 text-white"
-                              : hasAdminAccess()
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-600 text-gray-300"
+                              : "bg-blue-600 text-white"
                           }`}
                         >
                           {user.role.replace("_", " ").toUpperCase()}
@@ -126,7 +129,7 @@ const NavBar = ({
                       <Link
                         to="/admin"
                         onClick={() => setShowUserMenu(false)}
-                        className="w-full px-4 py-2 text-left text-blue-500 hover:bg-gray-700 rounded-lg flex items-center space-x-2"
+                        className="w-full px-4 py-2 text-left text-brand hover:bg-raised rounded-lg flex items-center space-x-2"
                       >
                         <LayoutDashboard size={16} />
                         <span>Admin Dashboard</span>
@@ -136,10 +139,9 @@ const NavBar = ({
                       aria-label="Logout"
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        logout();
-                        setShowUserMenu(false);
+                        handleLogout();
                       }}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-700 rounded-lg flex items-center space-x-2"
+                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-raised rounded-lg flex items-center space-x-2"
                     >
                       <LogOut size={16} />
                       <span>Logout</span>
@@ -151,7 +153,7 @@ const NavBar = ({
               <button
                 aria-label="Login"
                 onClick={onLoginClick}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-brand hover:opacity-90 text-brand-fg rounded-lg text-sm font-medium"
               >
                 Login
               </button>
@@ -161,7 +163,7 @@ const NavBar = ({
       </nav>
 
       {/* Desktop navbar */}
-      <div className="hidden lg:flex items-center justify-between bg-gray-800 shadow-md p-4 w-full sticky top-0 z-50">
+      <div className="hidden lg:flex items-center justify-between bg-surface border-b border-line shadow-sm px-4 py-3 w-full sticky top-0 z-50">
         <div className="flex items-center space-x-4">
           <Link
             to="/"
@@ -173,66 +175,76 @@ const NavBar = ({
               alt=""
               className="h-9 w-auto object-contain"
             />
-            <span className="text-[#E8A667] font-bold text-xl tracking-widest">
+            <span className="text-brand font-bold text-xl tracking-widest">
               RR PROPERTIES
             </span>
           </Link>
 
           <button
-            aria-label="Menu button to open the menu"
+            aria-label={isDesktopCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-raised transition-colors"
             title={isDesktopCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <Menu size={20} className="text-gray-300" />
+            {isDesktopCollapsed ? (
+              <PanelLeft size={20} className="text-muted" />
+            ) : (
+              <PanelLeftClose size={20} className="text-muted" />
+            )}
           </button>
 
           <nav className="flex items-center space-x-2 text-sm">
             {breadcrumbs.map((crumb, index) => (
               <div key={crumb.path} className="flex items-center space-x-2">
-                {index === 0 && <Home size={16} className="text-gray-400" />}
+                {index === 0 && <Home size={16} className="text-muted" />}
                 {index === breadcrumbs.length - 1 ? (
-                  <span className="text-white font-medium">{crumb.name}</span>
+                  <span className="text-fg font-medium">{crumb.name}</span>
                 ) : (
                   <Link
                     to={crumb.path}
-                    className="text-gray-400 hover:text-gray-300 transition-colors"
+                    className="text-muted hover:text-fg transition-colors"
                   >
                     {crumb.name}
                   </Link>
                 )}
                 {index < breadcrumbs.length - 1 && (
-                  <ChevronRight size={16} className="text-gray-500" />
+                  <ChevronRight size={16} className="text-muted" />
                 )}
               </div>
             ))}
           </nav>
         </div>
 
-        <div className="flex items-center space-x-4" ref={desktopMenuRef}>
+        <div className="flex items-center space-x-2" ref={desktopMenuRef}>
+          <button
+            type="button"
+            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-raised text-muted"
+          >
+            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           {isAuthenticated ? (
             <div className="relative">
               <button
                 aria-label="User icon"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="p-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
+                className="p-2 rounded-lg hover:bg-raised flex items-center space-x-2"
               >
-                <User size={20} className="text-gray-300" />
-                <span className="text-sm text-gray-300">{user.name}</span>
+                <User size={20} className="text-muted" />
+                <span className="text-sm text-fg">{user.name}</span>
               </button>
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
-                  <div className="px-4 py-2 border-b border-gray-700">
-                    <p className="text-sm text-gray-300">{user.name}</p>
-                    <p className="text-xs text-gray-400">{user.email}</p>
+                <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-lg border border-line z-50">
+                  <div className="px-4 py-2 border-b border-line">
+                    <p className="text-sm text-fg">{user.name}</p>
+                    <p className="text-xs text-muted">{user.email}</p>
                     {hasAdminAccess() && user.role && (
                       <span
                         className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${
                           isSuperAdmin()
                             ? "bg-purple-600 text-white"
-                            : hasAdminAccess()
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-600 text-gray-300"
+                            : "bg-blue-600 text-white"
                         }`}
                       >
                         {user.role.replace("_", " ").toUpperCase()}
@@ -243,7 +255,7 @@ const NavBar = ({
                     <Link
                       to="/admin"
                       onClick={() => setShowUserMenu(false)}
-                      className="w-full px-4 py-2 text-left text-blue-500 hover:bg-gray-700 rounded-lg flex items-center space-x-2"
+                      className="w-full px-4 py-2 text-left text-brand hover:bg-raised rounded-lg flex items-center space-x-2"
                     >
                       <LayoutDashboard size={16} />
                       <span>Admin Dashboard</span>
@@ -253,10 +265,9 @@ const NavBar = ({
                     aria-label="Logout"
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      logout();
-                      setShowUserMenu(false);
+                      handleLogout();
                     }}
-                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-700 rounded-lg flex items-center space-x-2"
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-raised rounded-lg flex items-center space-x-2"
                   >
                     <LogOut size={16} />
                     <span>Logout</span>
@@ -268,7 +279,7 @@ const NavBar = ({
             <button
               aria-label="Login"
               onClick={onLoginClick}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-brand hover:opacity-90 text-brand-fg rounded-lg text-sm font-medium"
             >
               Login
             </button>
