@@ -253,6 +253,31 @@ useEffect(() => {
     { name: "lift", label: "Lifts" },
   ];
 
+  const isPresentDetail = (value) => {
+    if (value === undefined || value === null) return false;
+    if (typeof value === "number") return !Number.isNaN(value) && value !== 0;
+    const text = String(value).trim();
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return ![
+      "not available",
+      "n/a",
+      "na",
+      "none",
+      "-",
+    ].includes(lower);
+  };
+
+  const additionalDetails = additionalDetailsConfig.filter((field) =>
+    isPresentDetail(property[field.name])
+  );
+  const hasParking = isPresentDetail(property.parking);
+  const hasDeposit =
+    property.securityDeposit !== undefined &&
+    property.securityDeposit !== null &&
+    property.securityDeposit !== "";
+  const hasBasicDetails = hasParking || hasDeposit;
+
   const API = import.meta.env.VITE_API_BASE_URL || "";
   const video = property?.videos?.[0];
   const hasVideo = Boolean(
@@ -694,47 +719,46 @@ useEffect(() => {
 
                 {activeTab === "details" && (
                   <div className="space-y-4">
-                    {/* Basic Details */}
-                    <div>
-                      <h3 className="font-semibold mb-2 text-fg text-sm">
-                        Basic Details
-                      </h3>
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                          <span className="text-muted text-xs">
-                            Parking:
-                          </span>
-                          <span className="font-medium text-xs">
-                            {property.parking}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted text-xs">
-                            Security Deposit:
-                          </span>
-                          <span className="font-medium text-xs">
-                            ₹
-                            {property.securityDeposit?.toLocaleString() ||
-                              "N/A"}
-                          </span>
+                    {hasBasicDetails && (
+                      <div>
+                        <h3 className="font-semibold mb-2 text-fg text-sm">
+                          Basic Details
+                        </h3>
+                        <div className="space-y-1.5">
+                          {hasParking && (
+                            <div className="flex justify-between">
+                              <span className="text-muted text-xs">
+                                Parking:
+                              </span>
+                              <span className="font-medium text-xs">
+                                {property.parking}
+                              </span>
+                            </div>
+                          )}
+                          {hasDeposit && (
+                            <div className="flex justify-between">
+                              <span className="text-muted text-xs">
+                                Security Deposit:
+                              </span>
+                              <span className="font-medium text-xs">
+                                ₹
+                                {Number(
+                                  property.securityDeposit
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Additional Details */}
-                    <div>
-                      <h3 className="font-semibold mb-2 text-fg text-sm">
-                        Additional Details
-                      </h3>
-                      <div className="space-y-1.5">
-                        {additionalDetailsConfig.map((field) => {
-                          const value = property[field.name];
-                          const hasValue =
-                            value !== undefined &&
-                            value !== null &&
-                            value !== "";
-
-                          return (
+                    {additionalDetails.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold mb-2 text-fg text-sm">
+                          Additional Details
+                        </h3>
+                        <div className="space-y-1.5">
+                          {additionalDetails.map((field) => (
                             <div
                               key={field.name}
                               className="flex justify-between"
@@ -743,13 +767,13 @@ useEffect(() => {
                                 {field.label}:
                               </span>
                               <span className="font-medium text-xs">
-                                {hasValue ? value : "Not Available"}
+                                {property[field.name]}
                               </span>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
