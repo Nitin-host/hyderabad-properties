@@ -14,6 +14,16 @@ function normalizeEtag(etag) {
   return String(etag).replace(/"/g, "");
 }
 
+function errorMessage(err) {
+  return String(err?.message || err || "");
+}
+
+function shouldFallbackToApi(err) {
+  return /file too large|direct r2|missing etag|failed \(\d|failed to fetch|network error|cors/i.test(
+    errorMessage(err)
+  );
+}
+
 async function uploadPartToR2(url, blob) {
   const res = await fetch(url, { method: "PUT", body: blob });
   if (!res.ok) {
@@ -61,18 +71,17 @@ async function uploadPartWithRetry(task) {
   throw lastError || new Error(`Failed to upload part ${task.partNumber}`);
 }
 
-export async function uploadVideoInChunks({
+async function runChunkedUpload({
   propertyId,
   file,
   onProgress,
+  viaApi = false,
 }) {
-  if (!file) throw new Error("No video file selected");
-  if (!file.size) throw new Error("Video file is empty");
-
   const init = await propertiesAPI.initVideoUpload(propertyId, {
     fileName: file.name,
     fileSize: file.size,
     contentType: file.type || "video/mp4",
+    viaApi,
   });
 
   const { uploadId, key, partSize, partUrls, directUpload } = init.data || {};
@@ -80,12 +89,12 @@ export async function uploadVideoInChunks({
     throw new Error("Failed to start chunked video upload");
   }
 
-  const size = partSize || DEFAULT_PART_SIZE;
+  const size = viaApi ? DEFAULT_PART_SIZE : partSize || DEFAULT_PART_SIZE;
   const partCount = Math.ceil(file.size / size);
   const urlByPart = new Map(
     (partUrls || []).map((p) => [Number(p.partNumber), p.url])
   );
-  let useDirect = Boolean(directUpload && urlByPart.size);
+  const useDirect = Boolean(!viaApi && directUpload && urlByPart.size);
   const concurrency = useDirect ? DIRECT_CONCURRENCY : PROXY_CONCURRENCY;
   const parts = new Array(partCount);
   let uploadedBytes = 0;
@@ -100,33 +109,19 @@ export async function uploadVideoInChunks({
           const partNumber = index + 1;
           const start = index * size;
           const blob = file.slice(start, Math.min(file.size, start + size));
-          try {
-            const etag = await uploadPartWithRetry({
-              propertyId,
-              uploadId,
-              key,
-              partNumber,
-              blob,
-              directUrl: useDirect ? urlByPart.get(partNumber) : "",
-            });
-            parts[index] = { PartNumber: partNumber, ETag: etag };
-          } catch (err) {
-            if (useDirect) {
-              useDirect = false;
-              const etag = await uploadPartWithRetry({
-                propertyId,
-                uploadId,
-                key,
-                partNumber,
-                blob,
-              });
-              parts[index] = { PartNumber: partNumber, ETag: etag };
-            } else {
-              throw err;
-            }
-          }
+          const etag = await uploadPartWithRetry({
+            propertyId,
+            uploadId,
+            key,
+            partNumber,
+            blob,
+            directUrl: useDirect ? urlByPart.get(partNumber) : "",
+          });
+          parts[index] = { PartNumber: partNumber, ETag: etag };
           uploadedBytes += blob.size;
-          onProgress?.(Math.min(100, Math.round((uploadedBytes / file.size) * 100)));
+          onProgress?.(
+            Math.min(100, Math.round((uploadedBytes / file.size) * 100))
+          );
         }
       }
     );
@@ -146,5 +141,32 @@ export async function uploadVideoInChunks({
       // ignore abort errors
     }
     throw err;
+  }
+}
+
+export async function uploadVideoInChunks({
+  propertyId,
+  file,
+  onProgress,
+}) {
+  if (!file) throw new Error("No video file selected");
+  if (!file.size) throw new Error("Video file is empty");
+
+  try {
+    return await runChunkedUpload({
+      propertyId,
+      file,
+      onProgress,
+      viaApi: false,
+    });
+  } catch (err) {
+    if (!shouldFallbackToApi(err)) throw err;
+    onProgress?.(0);
+    return runChunkedUpload({
+      propertyId,
+      file,
+      onProgress,
+      viaApi: true,
+    });
   }
 }
