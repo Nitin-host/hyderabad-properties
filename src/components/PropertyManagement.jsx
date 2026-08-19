@@ -10,6 +10,12 @@ import { useAuth } from "../context/AuthContext";
 import { notifyError, notifySuccess, notifyWarning } from "../util/Notifications";
 import { uploadVideoInChunks } from "../util/chunkedVideoUpload";
 
+const PENDING_VIDEO = new Set(["uploading", "queued", "processing"]);
+
+function isPendingVideo(property) {
+  const status = (property?.videos?.[0]?.videoStatus || "").toLowerCase();
+  return PENDING_VIDEO.has(status);
+}
 
 const PropertyManagement = ({
   properties: propProperties,
@@ -50,6 +56,12 @@ const PropertyManagement = ({
     () => typeof window !== "undefined" && window.innerWidth < 768
   );
   const fetchLock = useRef(false);
+  const propertiesRef = useRef(properties);
+  const editingIdRef = useRef(null);
+  propertiesRef.current = properties;
+  editingIdRef.current = editingProperty?._id
+    ? String(editingProperty._id)
+    : null;
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -75,7 +87,7 @@ const PropertyManagement = ({
       setImages([]);
       setVideos([]);
     }
-  }, [editingProperty]);
+  }, [editingProperty?._id]);
 
   const mergeById = (prev, next) => {
     const ids = new Set(prev.map((item) => String(item._id)));
@@ -192,7 +204,12 @@ const PropertyManagement = ({
           setShowForm(false);
           return { success: false };
         }
-        setProperties((prev) => [res.data, ...prev]);
+        setProperties((prev) => [
+          videos.length > 0
+            ? { ...res.data, videos: [{ videoStatus: "queued" }] }
+            : res.data,
+          ...prev,
+        ]);
         notifySuccess(res.message || "Property added successfully");
         refreshList();
         if (refreshProperties) refreshProperties();
@@ -267,9 +284,19 @@ const PropertyManagement = ({
             onProgress: setVideoProgress,
           });
         }
+        const nextVideos = pendingVideos[0]
+          ? [{ videoStatus: "queued" }]
+          : res.data?.videos;
         setProperties((prev) =>
-          prev.map((prop) => (prop._id === id ? { ...res.data } : prop))
+          prev.map((prop) =>
+            prop._id === id
+              ? { ...res.data, ...(nextVideos ? { videos: nextVideos } : {}) }
+              : prop
+          )
         );
+        if (pendingVideos[0]) {
+          applyVideos(id, [{ videoStatus: "queued" }]);
+        }
         notifySuccess(res.message || "Property updated successfully");
         refreshList();
         if (refreshProperties) refreshProperties();
@@ -535,18 +562,29 @@ const PropertyManagement = ({
 
   const handleView = (property) => setViewingProperty(property);
 
+  const applyVideos = (propertyId, videos) => {
+    const id = String(propertyId);
+    setProperties((prev) =>
+      prev.map((prop) =>
+        String(prop._id) === id ? { ...prop, videos } : prop
+      )
+    );
+    setEditingProperty((prev) =>
+      prev && String(prev._id) === id ? { ...prev, videos } : prev
+    );
+    setViewingProperty((prev) =>
+      prev && String(prev._id) === id ? { ...prev, videos } : prev
+    );
+    if (editingIdRef.current === id) {
+      setExistingVideos(videos || []);
+    }
+  };
+
   const handleRefreshVideoStatus = async (propertyId) => {
     try {
       const response = await propertiesAPI.checkVideoStatus(propertyId);
       if (response.success) {
-        const updatedVideos = response.data.videos;
-
-        setProperties((prev) =>
-          prev.map((prop) =>
-            prop._id === propertyId ? { ...prop, videos: updatedVideos } : prop
-          )
-        );
-
+        applyVideos(propertyId, response.data.videos);
         notifySuccess("Video status refreshed successfully");
       } else {
         notifyError(response.message || "Failed to refresh video status");
@@ -555,6 +593,58 @@ const PropertyManagement = ({
       notifyError("Failed to refresh video status");
     }
   };
+
+  const pendingVideoKey = showDeleted
+    ? ""
+    : properties
+        .filter(isPendingVideo)
+        .map((p) => String(p._id))
+        .sort()
+        .join(",");
+
+  useEffect(() => {
+    if (!pendingVideoKey) return undefined;
+    const ids = pendingVideoKey.split(",");
+    let cancelled = false;
+
+    const poll = async () => {
+      for (const propertyId of ids) {
+        if (cancelled) return;
+        const current = propertiesRef.current.find(
+          (p) => String(p._id) === propertyId
+        );
+        const prevStatus = (
+          current?.videos?.[0]?.videoStatus || ""
+        ).toLowerCase();
+        try {
+          const response = await propertiesAPI.checkVideoStatus(propertyId);
+          if (!response?.success || cancelled) continue;
+          const videos = response.data?.videos || [];
+          const nextStatus = (videos[0]?.videoStatus || "").toLowerCase();
+          if (nextStatus === prevStatus) continue;
+
+          applyVideos(propertyId, videos);
+
+          if (nextStatus === "completed" || nextStatus === "ready") {
+            notifySuccess("Video processing completed");
+          } else if (nextStatus === "error" || nextStatus === "failed") {
+            notifyError(
+              videos[0]?.errorMessage || "Video processing failed"
+            );
+          }
+        } catch {
+          // Keep polling; a single failed check should not stop updates.
+        }
+      }
+    };
+
+    poll();
+    const timer = setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [pendingVideoKey]);
 
 
   const tableHeader = [
